@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recon Engine — Justin Thom · Onchain/Offchain Reconciliation</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f7f5f0;
+    --paper: #fdfcf9;
+    --ink: #1a1a1a;
+    --muted: #8a8070;
+    --border: #d8d0c0;
+    --accent: #1a5c3a;
+    --accent2: #8b2635;
+    --accent3: #1a3a6c;
+    --warn: #8b5c1a;
+    --surface: #f0ece3;
+    --green: #1a5c3a;
+    --red: #8b2635;
+    --yellow: #8b5c1a;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--ink); font-family:'IBM Plex Sans',sans-serif; font-size:13px; min-height:100vh; }
+  body::after {
+    content:''; position:fixed; inset:0; pointer-events:none; z-index:999; opacity:0.4;
+    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  }
+  header { background:var(--ink); color:var(--paper); padding:0 36px; height:56px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
+  .logo { font-family:'IBM Plex Mono',monospace; font-size:14px; font-weight:600; letter-spacing:2px; }
+  .logo span { color:#6fba8a; }
+  .header-right { display:flex; align-items:center; gap:16px; }
+  .live-badge { background:rgba(111,186,138,0.2); border:1px solid rgba(111,186,138,0.4); color:#6fba8a; font-family:'IBM Plex Mono',monospace; font-size:10px; padding:3px 10px; letter-spacing:1px; }
+  .header-meta { font-family:'IBM Plex Mono',monospace; font-size:10px; color:#666; letter-spacing:1px; }
+  .main { max-width:1200px; margin:0 auto; padding:28px 24px; }
+
+  .fund-selector { display:flex; gap:2px; margin-bottom:24px; }
+  .fund-btn { padding:8px 20px; border:1px solid var(--border); background:transparent; color:var(--muted); font-family:'IBM Plex Mono',monospace; font-size:11px; cursor:pointer; transition:all 0.2s; letter-spacing:0.5px; }
+  .fund-btn.active { background:var(--ink); color:white; border-color:var(--ink); }
+  .fund-btn:hover:not(.active) { border-color:var(--ink); color:var(--ink); }
+
+  .status-bar { background:var(--paper); border:1px solid var(--border); padding:12px 20px; margin-bottom:20px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+  .status-item { font-family:'IBM Plex Mono',monospace; font-size:11px; display:flex; align-items:center; gap:8px; }
+  .status-label { color:var(--muted); }
+  .status-val { color:var(--ink); font-weight:500; }
+  .status-val.live { color:var(--green); }
+  .status-val.loading { color:var(--warn); }
+  .status-val.error { color:var(--red); }
+  .status-divider { color:var(--border); }
+
+  .upload-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }
+  .upload-box { background:var(--paper); border:2px dashed var(--border); padding:24px; text-align:center; transition:all 0.2s; }
+  .upload-box.live-data { border-style:solid; border-color:var(--green); background:#f0f9f4; }
+  .upload-box.loaded { border-style:solid; border-color:var(--accent3); background:#f0f3f9; }
+  .upload-box-title { font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; letter-spacing:1px; margin-bottom:6px; text-transform:uppercase; }
+  .upload-box-sub { font-size:11px; color:var(--muted); margin-bottom:12px; line-height:1.6; }
+  .upload-status { font-family:'IBM Plex Mono',monospace; font-size:11px; margin-top:8px; }
+  .btn-upload { background:var(--ink); color:white; border:none; padding:8px 20px; font-family:'IBM Plex Mono',monospace; font-size:11px; cursor:pointer; letter-spacing:1px; transition:all 0.2s; margin-right:6px; }
+  .btn-upload:hover { background:var(--accent3); }
+  .btn-template { background:transparent; color:var(--ink); border:1px solid var(--border); padding:8px 20px; font-family:'IBM Plex Mono',monospace; font-size:11px; cursor:pointer; letter-spacing:1px; transition:all 0.2s; }
+  .btn-template:hover { border-color:var(--ink); }
+
+  .tol-note { background:rgba(26,58,108,0.05); border:1px solid rgba(26,58,108,0.2); padding:12px 20px; margin-bottom:20px; font-size:11px; color:var(--accent3); font-family:'IBM Plex Mono',monospace; line-height:1.7; }
+
+  .run-row { display:flex; align-items:center; gap:16px; margin-bottom:20px; }
+  .btn-run { background:var(--ink); color:white; border:none; padding:13px 40px; font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; cursor:pointer; letter-spacing:2px; transition:all 0.2s; flex-shrink:0; }
+  .btn-run:hover:not(:disabled) { background:var(--green); }
+  .btn-run:disabled { background:var(--muted); cursor:not-allowed; }
+  .progress-wrap { flex:1; }
+  .progress-bar { height:3px; background:var(--border); }
+  .progress-fill { height:100%; background:var(--green); width:0; transition:width 0.4s ease; }
+  .progress-msg { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--muted); margin-top:5px; }
+
+  .two-pane { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }
+  .source-panel { background:var(--paper); border:1px solid var(--border); }
+  .panel-head { padding:12px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; background:var(--surface); }
+  .panel-head-label { font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; letter-spacing:1px; text-transform:uppercase; }
+  .chain-badge { font-family:'IBM Plex Mono',monospace; font-size:9px; padding:2px 8px; border:1px solid; letter-spacing:1px; }
+  .chain-badge.onchain { border-color:var(--green); color:var(--green); }
+  .chain-badge.offchain { border-color:var(--accent3); color:var(--accent3); }
+  .chain-badge.pending { border-color:var(--warn); color:var(--warn); }
+  .data-table { width:100%; border-collapse:collapse; }
+  .data-table th { font-family:'IBM Plex Mono',monospace; font-size:9px; color:var(--muted); letter-spacing:1px; text-align:left; padding:8px 16px; border-bottom:1px solid var(--border); background:var(--surface); }
+  .data-table td { font-family:'IBM Plex Mono',monospace; font-size:11px; padding:8px 16px; border-bottom:1px solid var(--border); }
+  .data-table tr:last-child td { border-bottom:none; }
+  td.loading { color:var(--muted); font-style:italic; }
+
+  .results-section { background:var(--paper); border:1px solid var(--border); margin-bottom:20px; }
+  .results-head { padding:14px 20px; border-bottom:2px solid var(--ink); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; }
+  .results-title { font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:600; letter-spacing:1px; }
+  .summary-chips { display:flex; gap:10px; }
+  .chip { font-family:'IBM Plex Mono',monospace; font-size:10px; padding:4px 12px; border:1px solid; letter-spacing:0.5px; }
+  .chip-ok { border-color:var(--green); color:var(--green); }
+  .chip-warn { border-color:var(--yellow); color:var(--yellow); }
+  .chip-err { border-color:var(--red); color:var(--red); }
+  .recon-table { width:100%; border-collapse:collapse; }
+  .recon-table th { font-family:'IBM Plex Mono',monospace; font-size:9px; color:var(--muted); letter-spacing:1px; padding:10px 16px; text-align:left; border-bottom:1px solid var(--border); background:var(--surface); }
+  .recon-table td { font-family:'IBM Plex Mono',monospace; font-size:11px; padding:10px 16px; border-bottom:1px solid var(--border); }
+  .recon-table tr:last-child td { border-bottom:none; }
+  .recon-table tr.row-warn { background:rgba(139,92,26,0.05); }
+  .recon-table tr.row-err { background:rgba(139,38,53,0.05); }
+  .status-label { font-size:9px; padding:2px 8px; border:1px solid; letter-spacing:1px; display:inline-block; }
+  .ok { border-color:var(--green); color:var(--green); }
+  .warn { border-color:var(--yellow); color:var(--yellow); }
+  .err { border-color:var(--red); color:var(--red); }
+  .diff-ok { color:var(--muted); }
+  .diff-warn { color:var(--yellow); font-weight:500; }
+  .diff-err { color:var(--red); font-weight:600; }
+  .export-row { display:flex; gap:12px; align-items:center; padding:14px 20px; background:var(--surface); border-top:1px solid var(--border); flex-wrap:wrap; }
+  .export-label { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--muted); flex:1; }
+  .btn-export { background:transparent; border:1px solid var(--border); color:var(--ink); font-family:'IBM Plex Mono',monospace; font-size:10px; padding:6px 16px; cursor:pointer; transition:all 0.15s; }
+  .btn-export:hover { background:var(--ink); color:white; border-color:var(--ink); }
+  footer { text-align:center; padding:20px; font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; color:var(--ink); border-top:1px solid var(--border); background:var(--surface); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <img src="https://docs.centrifuge.io/img/centrifuge-logo.svg" alt="Centrifuge" style="height:30px;filter:invert(1);margin-right:14px;vertical-align:middle">
+    <span style="color:white;font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600;letter-spacing:2px;margin-right:14px">CENTRIFUGE</span>
+    RECON<span>//</span>ENGINE
+  </div>
+  <div class="header-right">
+    <span class="live-badge" id="apiStatus">● CONNECTING</span>
+    <span class="header-meta">JUSTIN THOM · ONCHAIN/OFFCHAIN RECONCILIATION</span>
+  </div>
+</header>
+
+<div class="main">
+
+  <div class="fund-selector">
+    <button class="fund-btn active" onclick="selectFund('JAAA',this)">JAAA — Janus Henderson AAA CLO</button>
+    <button class="fund-btn" onclick="selectFund('JTRSY',this)">JTRSY — Janus Henderson Treasury</button>
+    <button class="fund-btn" onclick="selectFund('SP500',this)">SP500 — Janus Henderson S&P 500</button>
+  </div>
+
+  <div class="status-bar">
+    <div class="status-item"><span class="status-label">ONCHAIN NAV</span><span class="status-val loading" id="sb-nav">loading...</span></div>
+    <span class="status-divider">|</span>
+    <div class="status-item"><span class="status-label">SHARES</span><span class="status-val loading" id="sb-shares">loading...</span></div>
+    <span class="status-divider">|</span>
+    <div class="status-item"><span class="status-label">NAV/SHARE</span><span class="status-val loading" id="sb-price">loading...</span></div>
+    <span class="status-divider">|</span>
+    <div class="status-item"><span class="status-label">SOURCE</span><span class="status-val">api.centrifuge.io</span></div>
+    <span class="status-divider">|</span>
+    <div class="status-item"><span class="status-label">OFFCHAIN</span><span class="status-val loading" id="sb-offchain">awaiting upload</span></div>
+  </div>
+
+  <div class="upload-row">
+    <div class="upload-box live-data">
+      <div class="upload-box-title">⛓ Onchain Data — Centrifuge Protocol</div>
+      <div class="upload-box-sub">Pulled live from api.centrifuge.io · GraphQL · No authentication required<br>NAV · Shares · Price · Transaction history</div>
+      <div class="upload-status" id="onchain-status" style="color:var(--warn)">⟳ Fetching from Centrifuge API...</div>
+    </div>
+    <div class="upload-box" id="uploadBox">
+      <input type="file" id="csvInput" style="display:none" accept=".csv" onchange="handleCSV(event)">
+      <div class="upload-box-title">📄 Offchain — Administrator Report</div>
+      <div class="upload-box-sub">Upload your fund admin CSV · NAV report · Transfer agent · Custodian<br>Download the template below to see the expected format</div>
+      <button class="btn-upload" onclick="document.getElementById('csvInput').click()">↑ Upload CSV</button>
+      <button class="btn-template" onclick="downloadTemplate()">↓ Template</button>
+      <div class="upload-status" id="offchain-status" style="display:none;color:var(--green)"></div>
+    </div>
+  </div>
+
+  <div class="tol-note">
+    ℹ Tolerances: NAV ±$1,000 · Shares ±0 (exact) · NAV/Share ±$0.001 · MTD Deposits ±$5,000 · Fees ±$100 · Pending Redemptions ±$0 (exact) &nbsp;·&nbsp;
+    Within tolerance = DELTA &nbsp;·&nbsp; Outside tolerance = MISMATCH &nbsp;·&nbsp; Exact match = MATCH
+  </div>
+
+  <div class="run-row">
+    <button class="btn-run" id="runBtn" onclick="runReconciliation()" disabled>▶ RUN RECONCILIATION</button>
+    <div class="progress-wrap">
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="progress-msg" id="progressMsg">Upload offchain CSV to enable — onchain data loads automatically</div>
+    </div>
+  </div>
+
+  <div class="two-pane">
+    <div class="source-panel">
+      <div class="panel-head">
+        <div class="panel-head-label">Onchain State — Centrifuge Protocol</div>
+        <span class="chain-badge onchain" id="onchain-badge">LIVE</span>
+      </div>
+      <table class="data-table">
+        <thead><tr><th>FIELD</th><th>VALUE</th><th>DERIVED FROM</th></tr></thead>
+        <tbody id="onchainTbody"><tr><td class="loading" colspan="3">Fetching from api.centrifuge.io...</td></tr></tbody>
+      </table>
+    </div>
+    <div class="source-panel">
+      <div class="panel-head">
+        <div class="panel-head-label">Offchain Data — Administrator Report</div>
+        <span class="chain-badge pending" id="offchain-badge">PENDING UPLOAD</span>
+      </div>
+      <table class="data-table">
+        <thead><tr><th>FIELD</th><th>VALUE</th><th>SOURCE</th></tr></thead>
+        <tbody id="offchainTbody"><tr><td class="loading" colspan="3">Upload CSV to populate...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="results-section">
+    <div class="results-head">
+      <div class="results-title">RECONCILIATION REPORT — <span id="reportDate"></span></div>
+      <div class="summary-chips">
+        <span class="chip chip-ok" id="chip-ok">— MATCHED</span>
+        <span class="chip chip-warn" id="chip-warn">— DELTA</span>
+        <span class="chip chip-err" id="chip-err">— MISMATCH</span>
+      </div>
+    </div>
+    <table class="recon-table">
+      <thead>
+        <tr>
+          <th>LINE ITEM</th>
+          <th>ONCHAIN</th>
+          <th>OFFCHAIN</th>
+          <th>DIFFERENCE</th>
+          <th>TOLERANCE</th>
+          <th>STATUS</th>
+          <th>ACTION REQUIRED</th>
+        </tr>
+      </thead>
+      <tbody id="reconTbody">
+        <tr><td colspan="7" style="padding:20px;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:11px">
+          Onchain data loads automatically. Upload offchain CSV then click Run Reconciliation.
+        </td></tr>
+      </tbody>
+    </table>
+    <div class="export-row">
+      <div class="export-label">REPORT GENERATED: <span id="reportTs">—</span></div>
+      <button class="btn-export" onclick="exportCSV()">↓ EXPORT CSV</button>
+      <button class="btn-export" onclick="exportJSON()">↓ EXPORT JSON</button>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Justin Thom &nbsp;|&nbsp; 10 Years TradFi Fund Operations &nbsp;|&nbsp; 8 Years Hands-On Crypto Experience &nbsp;|&nbsp;
+  Live onchain data: api.centrifuge.io &nbsp;|&nbsp;
+  <a href="index.html" style="color:var(--green);text-decoration:none">← Portfolio</a>
+</footer>
+
+<script>
+const CENTRIFUGE_API = 'https://api.centrifuge.io';
+const POOL_IDS = { JAAA:'281474976710663', JTRSY:'281474976710662', SP500:'281474976710665' };
+
+const TOLERANCES = {
+  'Total NAV': 1000, 'Shares Outstanding': 0, 'NAV per Share': 0.001,
+  'MTD Deposits': 5000, 'Accrued Mgmt Fee': 100, 'Pending Redemptions': 0, 'Performance Fee': 100
+};
+const ACTIONS = {
+  'Total NAV':            'Cross-check administrator NAV strike against onchain oracle price × totalIssuance',
+  'Shares Outstanding':   'Confirm transfer agent share registry matches onchain totalIssuance exactly',
+  'NAV per Share':        'Verify fund accountant NAV strike aligns with onchain tokenPrice oracle',
+  'MTD Deposits':         'Reconcile bank statement confirmations against onchain DEPOSIT_COLLECTED events',
+  'Accrued Mgmt Fee':     'Confirm fee accrual calculation matches fund accounting system',
+  'Pending Redemptions':  'URGENT: Check ERC-7540 requestRedeem queue — transfer agent may not reflect pending onchain redeems',
+  'Performance Fee':      'Confirm performance fee calculation basis and accrual period'
+};
+
+let currentFund   = 'JAAA';
+let onchainState  = null;
+let offchainState = null;
+
+function insertDecimals(str, places) {
+  if (!str || str==='0') return 0;
+  const s = str.padStart(places+1,'0');
+  return parseFloat(s.slice(0,s.length-places) + '.' + s.slice(s.length-places));
+}
+function fmt(n, d=2) { return n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}); }
+
+async function fetchOnchain(poolId) {
+  const q = `{
+    pools(where:{id:"${poolId}"},limit:1){items{name tokens{items{id symbol totalIssuance tokenPrice}}}}
+    investorTransactions(where:{poolId:"${poolId}"},orderBy:"createdAt",orderDirection:"desc",limit:50){
+      items{type currencyAmount tokenAmount createdAt}
+    }
+  }`;
+  const res  = await fetch(CENTRIFUGE_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q})});
+  const json = await res.json();
+  if (json.errors) throw new Error(json.errors[0].message);
+
+  const pool  = json.data.pools?.items?.[0];
+  const token = pool?.tokens?.items?.[0];
+  const txs   = json.data.investorTransactions?.items || [];
+
+  const issuanceStr = token?.totalIssuance || '0';
+  const navPerShare = insertDecimals(token?.tokenPrice, 18);
+  const totalShares = insertDecimals(issuanceStr, issuanceStr.length > 18 ? 18 : 9);
+  const totalNav    = navPerShare * totalShares;
+
+  const now = new Date();
+  const mtdDeposits = txs
+    .filter(t => t.type==='DEPOSIT_COLLECTED' && t.createdAt)
+    .filter(t => { const d=new Date(parseInt(t.createdAt)); return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear(); })
+    .reduce((s,t) => s + parseFloat(t.currencyAmount||'0')/1e6, 0);
+
+  const pendingRedeemTxs = txs.filter(t=>t.type==='REDEEM_REQUEST_UPDATED');
+  const claimedRedeems   = txs.filter(t=>t.type==='REDEEM_COLLECTED'||t.type==='REDEEM_CLAIMED').length;
+  const pendingRedeemAmt = Math.max(0, pendingRedeemTxs.length - claimedRedeems) > 0
+    ? pendingRedeemTxs.reduce((s,t)=>{
+        const raw = parseFloat(t.tokenAmount||'0');
+        return s + (t.tokenAmount?.length>15 ? raw/1e18 : raw/1e9) * navPerShare;
+      }, 0)
+    : 0;
+
+  return { poolName:pool?.name||currentFund, symbol:token?.symbol||currentFund, totalNav, totalShares, navPerShare, mtdDeposits, pendingRedeemAmt, accruedMgmtFee:0, performanceFee:0 };
+}
+
+async function loadOnchain() {
+  document.getElementById('onchain-status').textContent = '⟳ Fetching from api.centrifuge.io...';
+  document.getElementById('onchain-status').style.color = 'var(--warn)';
+  document.getElementById('onchainTbody').innerHTML = '<tr><td class="loading" colspan="3">Loading live data...</td></tr>';
+  try {
+    onchainState = await fetchOnchain(POOL_IDS[currentFund]);
+    renderOnchainPanel();
+    document.getElementById('apiStatus').textContent = '● LIVE';
+    document.getElementById('onchain-status').textContent = '✓ Live — api.centrifuge.io · Pool: ' + POOL_IDS[currentFund];
+    document.getElementById('onchain-status').style.color = 'var(--green)';
+    document.getElementById('sb-nav').textContent    = '$' + fmt(onchainState.totalNav);
+    document.getElementById('sb-nav').className      = 'status-val live';
+    document.getElementById('sb-shares').textContent = fmt(onchainState.totalShares, 0);
+    document.getElementById('sb-shares').className   = 'status-val live';
+    document.getElementById('sb-price').textContent  = '$' + onchainState.navPerShare.toFixed(6);
+    document.getElementById('sb-price').className    = 'status-val live';
+    if (offchainState) document.getElementById('runBtn').disabled = false;
+  } catch(e) {
+    document.getElementById('onchain-status').textContent = '⚠ ' + e.message;
+    document.getElementById('onchain-status').style.color = 'var(--red)';
+    document.getElementById('apiStatus').textContent = '● ERROR';
+    document.getElementById('sb-nav').textContent = 'error'; document.getElementById('sb-nav').className = 'status-val error';
+  }
+}
+
+function renderOnchainPanel() {
+  const d = onchainState;
+  const rows = [
+    {f:'Total NAV',           v:'$'+fmt(d.totalNav),          n:'tokenPrice × totalIssuance'},
+    {f:'Shares Outstanding',  v:fmt(d.totalShares,4),          n:'totalIssuance (scaled)'},
+    {f:'NAV per Share',       v:'$'+d.navPerShare.toFixed(6),  n:'tokenPrice / 1e18'},
+    {f:'MTD Deposits',        v:'$'+fmt(d.mtdDeposits),        n:'DEPOSIT_COLLECTED (MTD)'},
+    {f:'Accrued Mgmt Fee',    v:'$'+fmt(d.accruedMgmtFee),     n:'not in public API'},
+    {f:'Pending Redemptions', v:'$'+fmt(d.pendingRedeemAmt),   n:'REDEEM_REQUEST_UPDATED'},
+    {f:'Performance Fee',     v:'$'+fmt(d.performanceFee),     n:'not in public API'},
+  ];
+  const tbody = document.getElementById('onchainTbody');
+  tbody.innerHTML = '';
+  rows.forEach(r => {
+    tbody.innerHTML += `<tr><td>${r.f}</td><td style="color:var(--green)">${r.v}</td><td style="color:var(--muted);font-size:10px">${r.n}</td></tr>`;
+  });
+}
+
+async function selectFund(key, btn) {
+  currentFund = key;
+  document.querySelectorAll('.fund-btn').forEach(b=>b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  onchainState = null; offchainState = null;
+  document.getElementById('runBtn').disabled = true;
+  document.getElementById('sb-nav').textContent='loading...'; document.getElementById('sb-nav').className='status-val loading';
+  document.getElementById('sb-shares').textContent='loading...'; document.getElementById('sb-shares').className='status-val loading';
+  document.getElementById('sb-price').textContent='loading...'; document.getElementById('sb-price').className='status-val loading';
+  document.getElementById('sb-offchain').textContent='awaiting upload'; document.getElementById('sb-offchain').className='status-val loading';
+  document.getElementById('offchain-status').style.display='none';
+  document.getElementById('offchain-badge').textContent='PENDING UPLOAD'; document.getElementById('offchain-badge').className='chain-badge pending';
+  document.getElementById('offchainTbody').innerHTML='<tr><td class="loading" colspan="3">Upload CSV to populate...</td></tr>';
+  document.getElementById('uploadBox').classList.remove('loaded');
+  document.getElementById('reconTbody').innerHTML='<tr><td colspan="7" style="padding:20px;color:var(--muted);font-family:IBM Plex Mono,monospace;font-size:11px">Upload offchain CSV then click Run Reconciliation.</td></tr>';
+  document.getElementById('chip-ok').textContent='— MATCHED'; document.getElementById('chip-warn').textContent='— DELTA'; document.getElementById('chip-err').textContent='— MISMATCH';
+  document.getElementById('progressMsg').textContent = 'Upload offchain CSV to enable reconciliation';
+  document.getElementById('progressFill').style.width = '0%';
+  await loadOnchain();
+}
+
+function handleCSV(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const parsed = parseCSV(ev.target.result);
+      if (!parsed||parsed.length===0) throw new Error('No data rows found in CSV');
+      offchainState = parsed;
+      renderOffchainPanel();
+      document.getElementById('uploadBox').classList.add('loaded');
+      document.getElementById('offchain-status').style.display='block';
+      document.getElementById('offchain-status').textContent='✓ Loaded: '+file.name+' ('+parsed.length+' rows)';
+      document.getElementById('offchain-status').style.color='var(--green)';
+      document.getElementById('sb-offchain').textContent=file.name; document.getElementById('sb-offchain').className='status-val live';
+      document.getElementById('offchain-badge').textContent='LOADED'; document.getElementById('offchain-badge').className='chain-badge offchain';
+      document.getElementById('progressMsg').textContent='Ready — click Run Reconciliation';
+      if (onchainState) document.getElementById('runBtn').disabled=false;
+    } catch(err) {
+      document.getElementById('offchain-status').style.display='block';
+      document.getElementById('offchain-status').textContent='⚠ Error: '+err.message;
+      document.getElementById('offchain-status').style.color='var(--red)';
+    }
+  };
+  reader.readAsText(file);
+}
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n').filter(l=>l.trim());
+  if (lines.length<2) throw new Error('CSV needs a header row and data rows');
+  const headers = lines[0].split(',').map(h=>h.trim().replace(/"/g,''));
+  return lines.slice(1).map(line=>{
+    const vals = line.split(',').map(v=>v.trim().replace(/"/g,''));
+    const obj={}; headers.forEach((h,i)=>obj[h]=vals[i]||''); return obj;
+  });
+}
+
+function renderOffchainPanel() {
+  const tbody = document.getElementById('offchainTbody');
+  tbody.innerHTML='';
+  offchainState.forEach(row=>{
+    const f = row['Field']||row['field']||row['LINE ITEM']||Object.values(row)[0]||'';
+    const v = row['Value']||row['value']||row['OFFCHAIN VALUE']||Object.values(row)[1]||'—';
+    const s = row['Source']||row['source']||Object.values(row)[2]||'—';
+    tbody.innerHTML += `<tr><td>${f}</td><td style="color:var(--accent3)">${v}</td><td style="color:var(--muted)">${s}</td></tr>`;
+  });
+}
+
+function runReconciliation() {
+  if (!onchainState||!offchainState) return;
+  const fill=document.getElementById('progressFill'), msg=document.getElementById('progressMsg');
+  const steps=['Reading onchain state...','Parsing offchain ledger...','Matching line items...','Calculating variances...','Applying tolerances...','Complete.'];
+  let i=0; fill.style.width='0%';
+  const iv=setInterval(()=>{
+    fill.style.width=((i+1)/steps.length*100)+'%'; msg.textContent=steps[i]; i++;
+    if(i>=steps.length){clearInterval(iv);computeRecon();}
+  },350);
+}
+
+function parseOffchainValue(str) {
+  if (!str) return null;
+  const n=parseFloat(str.replace(/[$,\s]/g,''));
+  return isNaN(n)?null:n;
+}
+
+function computeRecon() {
+  const oc=onchainState;
+  const offMap={};
+  offchainState.forEach(row=>{
+    const f=(row['Field']||row['field']||row['LINE ITEM']||Object.values(row)[0]||'').trim();
+    const v=row['Value']||row['value']||row['OFFCHAIN VALUE']||Object.values(row)[1]||'';
+    const s=row['Source']||row['source']||Object.values(row)[2]||'—';
+    offMap[f]={v,s};
+  });
+
+  const lines=[
+    {item:'Total NAV',           onchainVal:oc.totalNav,         fmt:'currency'},
+    {item:'Shares Outstanding',  onchainVal:oc.totalShares,      fmt:'number'},
+    {item:'NAV per Share',       onchainVal:oc.navPerShare,       fmt:'price'},
+    {item:'MTD Deposits',        onchainVal:oc.mtdDeposits,       fmt:'currency'},
+    {item:'Accrued Mgmt Fee',    onchainVal:oc.accruedMgmtFee,    fmt:'currency'},
+    {item:'Pending Redemptions', onchainVal:oc.pendingRedeemAmt,  fmt:'currency'},
+    {item:'Performance Fee',     onchainVal:oc.performanceFee,    fmt:'currency'},
+  ];
+
+  let ok=0,warn=0,err=0;
+  const tbody=document.getElementById('reconTbody'); tbody.innerHTML='';
+
+  lines.forEach(line=>{
+    const off=offMap[line.item];
+    const offVal=off?parseOffchainValue(off.v):null;
+    const offDisplay=off?off.v:'— not in CSV';
+    const tol=TOLERANCES[line.item]??100;
+    let status='ok', diffDisplay='$0.00';
+
+    if (offVal!==null) {
+      const diff=line.onchainVal-offVal;
+      const abs=Math.abs(diff);
+      status = abs===0?'ok':abs<=tol?'warn':'err';
+      const sign=diff>=0?'+':'-';
+      if (line.fmt==='price') diffDisplay=(diff>=0?'+':'-')+'$'+Math.abs(diff).toFixed(6);
+      else if (line.fmt==='number') diffDisplay=(diff>=0?'+':'-')+fmt(Math.abs(diff),4);
+      else diffDisplay=(diff>=0?'+$':'-$')+fmt(Math.abs(diff));
+    } else { status='err'; diffDisplay='No offchain data'; }
+
+    if(status==='ok')ok++; else if(status==='warn')warn++; else err++;
+
+    const fmtOnchain = line.fmt==='price'?'$'+line.onchainVal.toFixed(6):line.fmt==='number'?fmt(line.onchainVal,4):'$'+fmt(line.onchainVal);
+    const tolDisplay = line.fmt==='price'?'$'+tol.toFixed(3):'$'+fmt(tol);
+    const statusLabel=status==='ok'?'MATCH':status==='warn'?'DELTA':'MISMATCH';
+    const diffClass=status==='ok'?'diff-ok':status==='warn'?'diff-warn':'diff-err';
+    const action=status==='ok'?'—':ACTIONS[line.item]||'Investigate variance';
+
+    tbody.innerHTML+=`<tr class="row-${status}">
+      <td>${line.item}</td>
+      <td style="color:var(--green)">${fmtOnchain}</td>
+      <td style="color:var(--accent3)">${offDisplay}</td>
+      <td class="${diffClass}">${diffDisplay}</td>
+      <td style="color:var(--muted)">${tolDisplay}</td>
+      <td><span class="status-label ${status}">${statusLabel}</span></td>
+      <td style="color:var(--muted);font-size:10px;max-width:240px">${action}</td>
+    </tr>`;
+  });
+
+  document.getElementById('chip-ok').textContent=ok+' MATCHED';
+  document.getElementById('chip-warn').textContent=warn+' DELTA';
+  document.getElementById('chip-err').textContent=err+' MISMATCH';
+  const now=new Date();
+  document.getElementById('reportDate').textContent=now.toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('reportTs').textContent=now.toUTCString();
+}
+
+function downloadTemplate() {
+  const rows=[
+    ['Field','Value','Source'],
+    ['Total NAV','','Administrator Report'],
+    ['Shares Outstanding','','Transfer Agent'],
+    ['NAV per Share','','Fund Accountant NAV Strike'],
+    ['MTD Deposits','','Bank Statement'],
+    ['Accrued Mgmt Fee','','Fund Accounting System'],
+    ['Pending Redemptions','','Transfer Agent'],
+    ['Performance Fee','','Fund Accounting System'],
+  ];
+  const blob=new Blob([rows.map(r=>r.join(',')).join('\n')],{type:'text/csv'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='admin-report-template.csv'; a.click();
+}
+
+function exportCSV() {
+  const rows=[['LINE ITEM','ONCHAIN','OFFCHAIN','DIFFERENCE','TOLERANCE','STATUS','ACTION']];
+  document.querySelectorAll('#reconTbody tr').forEach(tr=>{
+    const cells=[...tr.querySelectorAll('td')].map(td=>'"'+td.textContent.trim()+'"');
+    if(cells.length===7) rows.push(cells);
+  });
+  const blob=new Blob([rows.map(r=>r.join(',')).join('\n')],{type:'text/csv'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='recon-report.csv'; a.click();
+}
+
+function exportJSON() {
+  const rows=[];
+  document.querySelectorAll('#reconTbody tr').forEach(tr=>{
+    const c=[...tr.querySelectorAll('td')].map(td=>td.textContent.trim());
+    if(c.length===7) rows.push({item:c[0],onchain:c[1],offchain:c[2],diff:c[3],tolerance:c[4],status:c[5],action:c[6]});
+  });
+  const blob=new Blob([JSON.stringify(rows,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='recon-report.json'; a.click();
+}
+
+document.getElementById('reportDate').textContent=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+loadOnchain();
+</script>
+</body>
+</html>
