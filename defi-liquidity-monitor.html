@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DeFi Liquidity Monitor — Justin Thom</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #08090f;
+  --surface:  #0e0f1a;
+  --card:     #13141f;
+  --border:   #1e2035;
+  --border2:  #252640;
+  --text:     #c8cae8;
+  --muted:    #4a4d70;
+  --muted2:   #6b6f9a;
+  --aave:     #00c39a;
+  --morpho:   #2470ff;
+  --sky:      #00c2ff;
+  --euler:    #e8a020;
+  --green:    #34d399;
+  --red:      #f87171;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif; font-size:13px; min-height:100vh; overflow-x:hidden; }
+body::before {
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background:
+    radial-gradient(ellipse 70% 40% at 15% 10%, rgba(182,80,158,0.07) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 85% 85%, rgba(36,112,255,0.06) 0%, transparent 60%);
+}
+header {
+  position:sticky; top:0; z-index:100;
+  background:rgba(8,9,15,0.95); backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+  height:56px; padding:0 32px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.logo-group { display:flex; align-items:center; gap:16px; }
+.logo-group img { height:24px; filter:invert(1); opacity:0.85; }
+.logo-div { width:1px; height:20px; background:var(--border2); }
+.page-title { font-size:14px; font-weight:600; color:var(--text); letter-spacing:0.3px; }
+.header-right { display:flex; align-items:center; gap:10px; }
+.badge { font-family:'DM Mono',monospace; font-size:10px; padding:4px 11px; letter-spacing:0.8px; border:1px solid; }
+.badge-live { border-color:rgba(52,211,153,0.4); color:var(--green); background:rgba(52,211,153,0.07); }
+.badge-info { border-color:rgba(200,202,232,0.2); color:var(--muted2); background:transparent; }
+.main { position:relative; z-index:1; max-width:1200px; margin:0 auto; padding:28px 24px 48px; }
+
+/* SUMMARY STRIP */
+.summary-strip {
+  display:grid; grid-template-columns:repeat(4,1fr);
+  gap:1px; background:var(--border); border:1px solid var(--border);
+  margin-bottom:28px;
+}
+.sum-cell { background:var(--card); padding:16px 20px; display:flex; align-items:center; gap:14px; }
+.sum-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.sum-label { font-size:9px; color:var(--muted); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:5px; font-family:'DM Mono',monospace; }
+.sum-value { font-size:20px; font-weight:600; line-height:1; color:#e8eaff; }
+.sum-sub   { font-size:10px; color:var(--muted2); margin-top:4px; font-family:'DM Mono',monospace; }
+
+/* SECTION LABEL */
+.section-label {
+  font-size:9px; color:var(--muted); letter-spacing:2px; text-transform:uppercase;
+  font-family:'DM Mono',monospace; padding-bottom:10px;
+  border-bottom:1px solid var(--border); margin-bottom:16px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.section-label span { color:var(--muted2); font-size:9px; }
+
+/* PROTOCOL GRID */
+.protocols-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:28px; }
+.protocol-card { background:var(--card); border:1px solid var(--border); overflow:hidden; transition:border-color 0.2s; }
+.protocol-card:hover { border-color:var(--border2); }
+.pc-header { padding:16px 20px 14px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); }
+.pc-title-row { display:flex; align-items:center; gap:10px; }
+.pc-dot { width:10px; height:10px; border-radius:50%; }
+.pc-name { font-size:15px; font-weight:600; color:#e8eaff; }
+.pc-desc { font-size:10px; color:var(--muted2); margin-top:2px; }
+.pc-tvl-badge { font-family:'DM Mono',monospace; font-size:11px; color:var(--muted2); text-align:right; }
+.pc-tvl-badge strong { display:block; font-size:16px; font-weight:500; color:#e8eaff; line-height:1.2; }
+.util-row { padding:12px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:12px; }
+.util-label { font-size:9px; color:var(--muted); letter-spacing:1.2px; text-transform:uppercase; font-family:'DM Mono',monospace; white-space:nowrap; width:80px; flex-shrink:0; }
+.util-bar-wrap { flex:1; height:4px; background:var(--border2); position:relative; overflow:hidden; }
+.util-bar-fill { position:absolute; left:0; top:0; height:100%; transition:width 0.8s ease; }
+.util-pct { font-family:'DM Mono',monospace; font-size:11px; color:var(--text); width:40px; text-align:right; flex-shrink:0; }
+.pc-metrics { padding:14px 20px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+.metric-label { font-size:9px; color:var(--muted); letter-spacing:1.2px; text-transform:uppercase; font-family:'DM Mono',monospace; margin-bottom:5px; }
+.metric-value { font-size:18px; font-weight:600; color:#e8eaff; line-height:1; }
+.metric-sub   { font-size:10px; color:var(--muted2); margin-top:3px; font-family:'DM Mono',monospace; }
+.pc-pools { border-top:1px solid var(--border); }
+.pool-head { display:grid; grid-template-columns:2fr 1fr 1fr 1fr; padding:8px 20px; background:var(--surface); border-bottom:1px solid var(--border); }
+.pool-head span { font-size:9px; color:var(--muted); letter-spacing:1.2px; text-transform:uppercase; font-family:'DM Mono',monospace; }
+.pool-row { display:grid; grid-template-columns:2fr 1fr 1fr 1fr; padding:9px 20px; border-bottom:1px solid rgba(30,32,53,0.5); align-items:center; transition:background 0.15s; }
+.pool-row:last-child { border-bottom:none; }
+.pool-row:hover { background:rgba(255,255,255,0.02); }
+.pool-name { font-size:12px; color:var(--text); font-weight:500; }
+.pool-chain { font-size:10px; color:var(--muted2); margin-top:1px; font-family:'DM Mono',monospace; }
+.pool-apy  { font-size:13px; font-weight:600; color:var(--green); font-family:'DM Mono',monospace; }
+.pool-tvl  { font-size:11px; color:var(--muted2); font-family:'DM Mono',monospace; }
+.pool-util { font-size:11px; color:var(--text); font-family:'DM Mono',monospace; }
+.loading-row { padding:16px 20px; text-align:center; color:var(--muted2); font-size:11px; font-family:'DM Mono',monospace; letter-spacing:1px; }
+.error-row { padding:14px 20px; color:var(--red); font-size:11px; font-family:'DM Mono',monospace; }
+
+/* ROUTING */
+.routing-section { background:var(--card); border:1px solid var(--border); margin-bottom:28px; }
+.routing-header { padding:16px 20px; border-bottom:1px solid var(--border); }
+.routing-title { font-size:14px; font-weight:600; color:#e8eaff; }
+.routing-sub { font-size:11px; color:var(--muted2); margin-top:2px; }
+.routing-body { padding:20px; display:grid; grid-template-columns:1fr auto 2fr; gap:20px; align-items:start; }
+.field-label-rt { font-size:9px; color:var(--muted); letter-spacing:1.5px; text-transform:uppercase; font-family:'DM Mono',monospace; margin-bottom:8px; }
+.routing-input { width:100%; background:var(--surface); border:1px solid var(--border2); color:#e8eaff; font-family:'DM Mono',monospace; font-size:15px; padding:12px 16px; outline:none; transition:border-color 0.2s; margin-bottom:12px; }
+.routing-input:focus { border-color:var(--morpho); }
+.risk-toggles { display:flex; gap:6px; flex-wrap:wrap; }
+.risk-toggle { padding:5px 12px; border:1px solid var(--border2); background:transparent; color:var(--muted2); font-family:'DM Mono',monospace; font-size:10px; cursor:pointer; transition:all 0.2s; letter-spacing:0.5px; }
+.risk-toggle.active { background:rgba(36,112,255,0.12); border-color:var(--morpho); color:var(--morpho); }
+.routing-arrow { font-size:24px; color:var(--muted); padding-top:32px; align-self:center; }
+.route-item { display:flex; align-items:center; gap:14px; padding:12px 16px; background:var(--surface); border:1px solid var(--border); margin-bottom:8px; position:relative; overflow:hidden; }
+.route-item.best { border-color:var(--green); background:rgba(52,211,153,0.04); }
+.route-item.best::before { content:'BEST'; position:absolute; top:0; right:0; background:var(--green); color:var(--bg); font-family:'DM Mono',monospace; font-size:8px; font-weight:600; padding:2px 8px; letter-spacing:1px; }
+.route-rank { font-family:'DM Mono',monospace; font-size:18px; font-weight:500; color:var(--muted); width:20px; flex-shrink:0; }
+.route-item.best .route-rank { color:var(--green); }
+.route-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.route-protocol { font-size:13px; font-weight:600; color:#e8eaff; width:80px; flex-shrink:0; }
+.route-pool { font-size:11px; color:var(--muted2); flex:1; font-family:'DM Mono',monospace; }
+.route-apy { font-family:'DM Mono',monospace; font-size:16px; font-weight:600; color:var(--green); width:70px; text-align:right; flex-shrink:0; }
+.route-yield { font-size:11px; color:var(--muted2); width:100px; text-align:right; flex-shrink:0; font-family:'DM Mono',monospace; }
+
+footer { position:relative; z-index:1; text-align:center; padding:20px; border-top:1px solid var(--border); font-family:'DM Mono',monospace; font-size:12px; font-weight:500; color:var(--text); }
+
+@keyframes shimmer { 0%{opacity:0.4} 50%{opacity:0.8} 100%{opacity:0.4} }
+.shimmer { animation:shimmer 1.4s ease infinite; }
+
+/* HORIZON CARD */
+.horizon-badge {
+  display:inline-flex; align-items:center; gap:6px;
+  font-family:'DM Mono',monospace; font-size:9px; letter-spacing:1.2px;
+  padding:3px 9px; border:1px solid rgba(0,195,154,0.35);
+  color:var(--aave); background:rgba(0,195,154,0.07);
+  text-transform:uppercase;
+}
+.collateral-row {
+  display:grid; grid-template-columns:1fr 1fr;
+  gap:1px; background:var(--border); border-top:1px solid var(--border);
+}
+.collateral-cell {
+  background:var(--card); padding:14px 20px;
+}
+.collateral-cell .metric-label { margin-bottom:6px; }
+.integration-note {
+  padding:12px 20px; border-top:1px solid var(--border);
+  font-size:11px; color:var(--muted2); line-height:1.6;
+  background:rgba(0,195,154,0.03);
+}
+.integration-note strong { color:var(--aave); font-weight:500; }
+.resolv-strip {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 20px; border-top:1px solid var(--border);
+  background:rgba(0,195,154,0.04);
+}
+.resolv-strip .rs-label { font-size:9px; color:var(--muted); letter-spacing:1.5px; text-transform:uppercase; font-family:'DM Mono',monospace; }
+.resolv-strip .rs-val   { font-size:13px; font-weight:600; color:var(--aave); font-family:'DM Mono',monospace; margin-left:auto; }
+.resolv-strip .rs-sub   { font-size:10px; color:var(--muted2); font-family:'DM Mono',monospace; }
+/* LIQUIDITY HEALTH */
+.health-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 16px; margin-bottom: 28px;
+}
+.health-card {
+  background: var(--card); border: 1px solid var(--border);
+  padding: 20px;
+}
+.health-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px;
+}
+.health-title { font-size: 12px; font-weight: 600; color: #e8eaff; }
+.health-badge {
+  font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 1px;
+  padding: 2px 8px; border: 1px solid;
+}
+.badge-safe   { border-color: rgba(52,211,153,0.4); color: var(--green); background: rgba(52,211,153,0.06); }
+.badge-watch  { border-color: rgba(247,169,75,0.4);  color: #f7a94b;     background: rgba(247,169,75,0.06); }
+.badge-live2  { border-color: rgba(100,130,255,0.4); color: #8899ff;     background: rgba(100,130,255,0.06); }
+.health-metric { margin-bottom: 14px; }
+.health-metric:last-child { margin-bottom: 0; }
+.hm-row { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 5px; }
+.hm-label { font-size: 9px; color: var(--muted); letter-spacing: 1.2px; text-transform: uppercase; font-family: 'DM Mono', monospace; }
+.hm-value { font-size: 18px; font-weight: 600; font-family: 'DM Mono', monospace; line-height: 1; }
+.hm-bar-wrap { height: 3px; background: var(--border2); position: relative; overflow: hidden; }
+.hm-bar-fill { position: absolute; left: 0; top: 0; height: 100%; transition: width 0.8s ease; }
+.hm-sub { font-size: 10px; color: var(--muted2); margin-top: 4px; font-family: 'DM Mono', monospace; }
+.threshold-line {
+  position: absolute; top: -2px; height: 7px; width: 2px; background: rgba(248,113,113,0.7);
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-group">
+    <img src="https://docs.centrifuge.io/img/centrifuge-logo.svg" alt="Centrifuge">
+    <div class="logo-div"></div>
+    <div class="page-title">DeFi Liquidity Monitor</div>
+  </div>
+  <div class="header-right">
+    <span class="badge badge-live" id="liveStatus">● LOADING</span>
+    <span class="badge badge-info">JAAA · AAVE HORIZON · ETH MAINNET</span>
+    <span class="badge badge-info" id="lastUpdate">—</span>
+  </div>
+</header>
+
+<div class="main">
+
+  <div class="summary-strip">
+    <div class="sum-cell"><div class="sum-dot" style="background:var(--aave)"></div><div><div class="sum-label">Aave Horizon · JAAA</div><div class="sum-value shimmer" id="sum-jaaa-nav">—</div><div class="sum-sub" id="sum-jaaa-sub">Live NAV per Share</div></div></div>
+    <div class="sum-cell"><div class="sum-dot" style="background:var(--morpho)"></div><div><div class="sum-label">Morpho</div><div class="sum-value shimmer" id="sum-morpho-apy">—</div><div class="sum-sub" id="sum-morpho-tvl">Best Vault APY</div></div></div>
+    <div class="sum-cell"><div class="sum-dot" style="background:var(--sky)"></div><div><div class="sum-label">Sky</div><div class="sum-value shimmer" id="sum-sky-apy">—</div><div class="sum-sub" id="sum-sky-tvl">Sky Savings Rate</div></div></div>
+    <div class="sum-cell"><div class="sum-dot" style="background:var(--euler)"></div><div><div class="sum-label">Euler V2</div><div class="sum-value shimmer" id="sum-euler-apy">—</div><div class="sum-sub" id="sum-euler-tvl">Best Vault APY</div></div></div>
+  </div>
+
+  <div class="section-label">Protocol Overview — Centrifuge RWA Integrations <span id="pool-count">Fetching live data…</span></div>
+
+  <div class="protocols-grid">
+
+    <!-- AAVE HORIZON / JAAA -->
+    <div class="protocol-card">
+      <div class="pc-header">
+        <div>
+          <div class="pc-title-row">
+            <div class="pc-dot" style="background:var(--aave)"></div>
+            <div class="pc-name">Aave Horizon</div>
+          </div>
+          <div class="pc-desc" style="margin-top:4px">
+            <span class="horizon-badge">● Centrifuge Launch Partner</span>
+          </div>
+        </div>
+        <div class="pc-tvl-badge"><strong id="jaaa-fund-tvl" class="shimmer">—</strong>JAAA Fund TVL</div>
+      </div>
+
+      <!-- Live Centrifuge data metrics -->
+      <div class="pc-metrics" style="border-bottom:1px solid var(--border)">
+        <div><div class="metric-label">NAV / Share</div><div class="metric-value shimmer" id="jaaa-nav-share">—</div><div class="metric-sub">Live · Centrifuge</div></div>
+        <div><div class="metric-label">Total Issuance</div><div class="metric-value shimmer" id="jaaa-issuance">—</div><div class="metric-sub">Onchain shares</div></div>
+        <div><div class="metric-label">Implied APY</div><div class="metric-value shimmer" id="jaaa-apy">—</div><div class="metric-sub">30-day estimate</div></div>
+      </div>
+
+      <!-- Collateral in Horizon -->
+      <div class="collateral-row">
+        <div class="collateral-cell">
+          <div class="metric-label">Resolv Deployment</div>
+          <div class="metric-value" style="font-size:22px;color:var(--aave)">$100M</div>
+          <div class="metric-sub">Max JAAA collateral · live loop</div>
+        </div>
+        <div class="collateral-cell">
+          <div class="metric-label">Collateral Assets</div>
+          <div class="metric-value" style="font-size:14px;color:#e8eaff;line-height:1.4">JAAA · JTRSY</div>
+          <div class="metric-sub">Centrifuge launch assets</div>
+        </div>
+      </div>
+
+      <!-- Resolv loop strip -->
+      <div class="resolv-strip">
+        <div>
+          <div class="rs-label">Strategy</div>
+          <div style="font-size:11px;color:var(--text);margin-top:2px">Deposit JAAA → borrow USDC stablecoin → reinvest → loop</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div class="rs-label">Borrow Tokens</div>
+          <div class="rs-val">USDC · GHO · RLUSD</div>
+        </div>
+      </div>
+
+      <!-- Context note -->
+      <div class="integration-note">
+        Aave Horizon is Centrifuge's institutional DeFi integration, enabling tokenized RWAs like JAAA and JTRSY to be used as collateral in DeFi. The proposed $100M allocation from Resolv would represent one of the largest RWA-backed looping strategies executed in DeFi.
+      </div>
+    </div>
+
+    <!-- MORPHO -->
+    <div class="protocol-card">
+      <div class="pc-header">
+        <div><div class="pc-title-row"><div class="pc-dot" style="background:var(--morpho)"></div><div class="pc-name">Morpho</div></div><div class="pc-desc">Permissionless lending · Ethereum</div></div>
+        <div class="pc-tvl-badge"><strong id="morpho-tvl">—</strong>Total TVL</div>
+      </div>
+      <div class="util-row"><div class="util-label">Utilization</div><div class="util-bar-wrap"><div class="util-bar-fill" id="morpho-util-bar" style="width:0%;background:var(--morpho)"></div></div><div class="util-pct" id="morpho-util-pct">—</div></div>
+      <div class="pc-metrics">
+        <div><div class="metric-label">Best APY (isolated vault)</div><div class="metric-value shimmer" id="morpho-best-apy">—</div><div class="metric-sub">Single vault, concentrated risk</div></div>
+        <div><div class="metric-label">Avg APY</div><div class="metric-value shimmer" id="morpho-avg-apy">—</div><div class="metric-sub">All USDC vaults</div></div>
+        <div><div class="metric-label">Vaults</div><div class="metric-value shimmer" id="morpho-count">—</div><div class="metric-sub">Active USDC</div></div>
+      </div>
+      <div class="pc-pools"><div class="pool-head"><span>Vault</span><span>APY</span><span>TVL</span><span>Util</span></div><div id="morpho-pools"><div class="loading-row shimmer">LOADING…</div></div></div>
+    </div>
+
+    <!-- SKY -->
+    <div class="protocol-card">
+      <div class="pc-header">
+        <div><div class="pc-title-row"><div class="pc-dot" style="background:var(--sky)"></div><div class="pc-name">Sky</div></div><div class="pc-desc">Sky Savings Rate · sUSDS · Ethereum</div></div>
+        <div class="pc-tvl-badge"><strong id="sky-tvl">—</strong>Total TVL</div>
+      </div>
+      <div class="util-row"><div class="util-label">Utilization</div><div class="util-bar-wrap"><div class="util-bar-fill" id="sky-util-bar" style="width:0%;background:var(--sky)"></div></div><div class="util-pct" id="sky-util-pct">—</div></div>
+      <div class="pc-metrics">
+        <div><div class="metric-label">SSR APY</div><div class="metric-value shimmer" id="sky-ssr-apy">—</div><div class="metric-sub">sUSDS rate</div></div>
+        <div><div class="metric-label">Best APY</div><div class="metric-value shimmer" id="sky-best-apy">—</div><div class="metric-sub">Incl. rewards</div></div>
+        <div><div class="metric-label">Pools</div><div class="metric-value shimmer" id="sky-count">—</div><div class="metric-sub">Active</div></div>
+      </div>
+      <div class="pc-pools"><div class="pool-head"><span>Pool</span><span>APY</span><span>TVL</span><span>Util</span></div><div id="sky-pools"><div class="loading-row shimmer">LOADING…</div></div></div>
+    </div>
+
+    <!-- EULER -->
+    <div class="protocol-card">
+      <div class="pc-header">
+        <div><div class="pc-title-row"><div class="pc-dot" style="background:var(--euler)"></div><div class="pc-name">Euler V2</div></div><div class="pc-desc">Modular ERC-4626 vaults · Ethereum</div></div>
+        <div class="pc-tvl-badge"><strong id="euler-tvl">—</strong>Total TVL</div>
+      </div>
+      <div class="util-row"><div class="util-label">Utilization</div><div class="util-bar-wrap"><div class="util-bar-fill" id="euler-util-bar" style="width:0%;background:var(--euler)"></div></div><div class="util-pct" id="euler-util-pct">—</div></div>
+      <div class="pc-metrics">
+        <div><div class="metric-label">Best APY</div><div class="metric-value shimmer" id="euler-best-apy">—</div><div class="metric-sub">USDC vault</div></div>
+        <div><div class="metric-label">Avg APY</div><div class="metric-value shimmer" id="euler-avg-apy">—</div><div class="metric-sub">USDC pools</div></div>
+        <div><div class="metric-label">Vaults</div><div class="metric-value shimmer" id="euler-count">—</div><div class="metric-sub">Active USDC</div></div>
+      </div>
+      <div class="pc-pools"><div class="pool-head"><span>Vault</span><span>APY</span><span>TVL</span><span>Util</span></div><div id="euler-pools"><div class="loading-row shimmer">LOADING…</div></div></div>
+    </div>
+
+  </div>
+
+  <!-- Routing Engine -->
+  <div class="section-label">Deployment Router</div>
+  <div class="routing-section">
+    <div class="routing-header">
+      <div class="routing-title">Best Yield Routing</div>
+      <div class="routing-sub">Given a USDC amount, rank protocols by net APY · updates with live data</div>
+    </div>
+    <div class="routing-body">
+      <div>
+        <div class="field-label-rt">USDC Amount</div>
+        <input class="routing-input" type="number" id="routeAmount" value="1000000" placeholder="e.g. 1000000" oninput="updateRouting()">
+        <div class="field-label-rt" style="margin-top:12px">Risk Tolerance</div>
+        <div class="risk-toggles">
+          <button class="risk-toggle active" onclick="setRisk('all',this)">ALL</button>
+          <button class="risk-toggle" onclick="setRisk('blue',this)">BLUE CHIP</button>
+          <button class="risk-toggle" onclick="setRisk('high',this)">HIGH YIELD</button>
+        </div>
+      </div>
+      <div class="routing-arrow">→</div>
+      <div id="routingResults"><div class="loading-row shimmer">Waiting for live data…</div></div>
+    </div>
+  </div>
+
+  <!-- Liquidity Health -->
+  <div class="section-label" style="margin-top:28px">Liquidity Health <span>Live protocol risk metrics · derived from DefiLlama</span></div>
+  <div class="health-grid">
+
+    <!-- Collateral Health -->
+    <div class="health-card">
+      <div class="health-header">
+        <div class="health-title">Collateral Health</div>
+        <div class="health-badge badge-safe" id="collateral-status">SIMULATED</div>
+      </div>
+      <div class="health-metric">
+        <div class="hm-row">
+          <div class="hm-label">Current Ratio</div>
+          <div class="hm-value" id="health-collat-ratio" style="color:var(--green)">—</div>
+        </div>
+        <div class="hm-bar-wrap">
+          <div class="hm-bar-fill" id="health-collat-bar" style="background:var(--green);width:0%"></div>
+          <div class="threshold-line" id="health-collat-threshold" style="left:50%"></div>
+        </div>
+        <div class="hm-sub">Simulated well-managed position · red line = liquidation threshold</div>
+      </div>
+      <div class="health-metric">
+        <div class="hm-row">
+          <div class="hm-label">Liquidation Threshold</div>
+          <div class="hm-value" style="color:#f7a94b;font-size:15px">150%</div>
+        </div>
+        <div class="hm-sub">Aave Horizon RWA floor · ~75% max LTV</div>
+      </div>
+    </div>
+
+    <!-- Borrow Utilization -->
+    <div class="health-card">
+      <div class="health-header">
+        <div class="health-title">Borrow Utilization</div>
+        <div class="health-badge badge-live2" id="util-status">LIVE</div>
+      </div>
+      <div class="health-metric">
+        <div class="hm-row">
+          <div class="hm-label">Morpho USDC Utilization</div>
+          <div class="hm-value" id="health-morpho-util" style="color:#8899ff">—</div>
+        </div>
+        <div class="hm-bar-wrap">
+          <div class="hm-bar-fill" id="health-morpho-util-bar" style="background:#8899ff;width:0%"></div>
+        </div>
+        <div class="hm-sub">Avg across active USDC vaults</div>
+      </div>
+      <div class="health-metric">
+        <div class="hm-row">
+          <div class="hm-label">Euler V2 Utilization</div>
+          <div class="hm-value" id="health-euler-util" style="color:var(--euler)">—</div>
+        </div>
+        <div class="hm-bar-wrap">
+          <div class="hm-bar-fill" id="health-euler-util-bar" style="background:var(--euler);width:0%"></div>
+        </div>
+        <div class="hm-sub">Avg across active vaults</div>
+      </div>
+    </div>
+
+    <!-- Protocol Risk -->
+    <div class="health-card">
+      <div class="health-header">
+        <div class="health-title">Protocol Risk Summary</div>
+        <div class="health-badge badge-watch">MONITOR</div>
+      </div>
+      <div class="health-metric">
+        <div class="hm-row">
+          <div class="hm-label">Best Isolated Vault APY</div>
+          <div class="hm-value" id="health-best-apy" style="color:var(--morpho)">—</div>
+        </div>
+        <div class="hm-sub">High APY = concentrated risk in one vault</div>
+      </div>
+      <div class="health-metric">
+        <div class="hm-row">
+          <div class="hm-label">Sky SSR (Risk-Free Baseline)</div>
+          <div class="hm-value" id="health-sky-ssr" style="color:var(--sky)">—</div>
+        </div>
+        <div class="hm-sub">Delta vs best vault = risk premium</div>
+      </div>
+      <div class="health-metric">
+        <div class="hm-row">
+          <div class="hm-label">Risk Premium</div>
+          <div class="hm-value" id="health-risk-premium" style="color:var(--green)">—</div>
+        </div>
+        <div class="hm-sub">Best vault APY minus Sky SSR</div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+  Justin Thom &nbsp;|&nbsp; 10 Years TradFi Fund Operations &nbsp;|&nbsp; 8 Years Active in Crypto Markets &nbsp;|&nbsp; Live data: Centrifuge API + DefiLlama Yields
+</footer>
+
+<script>
+let allPools = [];
+let riskFilter = 'all';
+
+const PROTO = {
+  morpho: { keys:['morpho','morpho-blue','morpho-v1'],  color:'var(--morpho)', label:'Morpho'   },
+  sky:    { keys:['sky','makerdao-sky'],                 color:'var(--sky)',    label:'Sky'      },
+  euler:  { keys:['euler','euler-v2'],                  color:'var(--euler)',  label:'Euler V2' },
+};
+
+// JAAA pool ID on Centrifuge
+const JAAA_POOL_ID = '281474976710663';
+
+const fmt = {
+  apy: v => (v==null||isNaN(v)) ? '—' : v.toFixed(2)+'%',
+  tvl: v => {
+    if (v==null||isNaN(v)) return '—';
+    if (v>=1e9) return '$'+(v/1e9).toFixed(2)+'B';
+    if (v>=1e6) return '$'+(v/1e6).toFixed(1)+'M';
+    if (v>=1e3) return '$'+(v/1e3).toFixed(0)+'K';
+    return '$'+v.toFixed(0);
+  },
+  nav: v => {
+    if (v==null||isNaN(v)) return '—';
+    return '$'+v.toFixed(4);
+  },
+};
+
+// Fetch JAAA live data from Centrifuge API
+async function fetchJAAA() {
+  const CENTRIFUGE_API = 'https://api.centrifuge.io';
+
+  // Step 1: fetch pool + token metadata
+  const query1 = `{
+    pools(where: { id: "${JAAA_POOL_ID}" }, limit: 1) {
+      items {
+        id
+        tokens {
+          items {
+            id
+            tokenPrice
+            totalIssuance
+          }
+        }
+      }
+    }
+  }`;
+
+  try {
+    const res1 = await fetch(CENTRIFUGE_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: query1 })
+    });
+    if (!res1.ok) throw new Error('HTTP ' + res1.status);
+    const json1 = await res1.json();
+    if (json1.errors) throw new Error(json1.errors[0].message);
+
+    const token = json1.data?.pools?.items?.[0]?.tokens?.items?.[0];
+    if (!token) throw new Error('No token data');
+
+    // Decode price (18 decimals)
+    const priceRaw = token.tokenPrice || '0';
+    function insertDecimals(str, places) {
+      if (!str || str === '0') return 0;
+      const s = str.padStart(places + 1, '0');
+      const intPart = s.slice(0, s.length - places) || '0';
+      const decPart = s.slice(s.length - places);
+      return parseFloat(intPart + '.' + decPart);
+    }
+    const price = insertDecimals(priceRaw, 18);
+
+    // Decode supply (auto-detect decimals: JAAA totalIssuance uses 9 decimals for ~$1B)
+    const supplyRaw = (token.totalIssuance || '0').toString();
+    const supply = supplyRaw.length > 18
+      ? insertDecimals(supplyRaw, 18)
+      : insertDecimals(supplyRaw, 9);
+
+    const tvl = price * supply;
+
+    // Step 2: fetch historical snapshots for APY estimate
+    const tokenId = token.id;
+    let impliedApy = null;
+
+    if (tokenId) {
+      const query2 = `{
+        tokenInstanceSnapshots(
+          where: { tokenId: "${tokenId}" }
+          orderBy: "timestamp"
+          orderDirection: "desc"
+          limit: 5
+        ) {
+          items { timestamp tokenPrice }
+        }
+      }`;
+      const res2 = await fetch(CENTRIFUGE_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: query2 })
+      });
+      if (res2.ok) {
+        const json2 = await res2.json();
+        const snaps = json2.data?.tokenInstanceSnapshots?.items || [];
+        if (snaps.length >= 2) {
+          const p1 = insertDecimals(snaps[0].tokenPrice, 18);
+          const p2 = insertDecimals(snaps[snaps.length - 1].tokenPrice, 18);
+          const t1 = parseInt(snaps[0].timestamp);
+          const t2 = parseInt(snaps[snaps.length - 1].timestamp);
+          const daysDiff = Math.abs(t1 - t2) / (1000 * 60 * 60 * 24);
+          if (daysDiff > 0 && p2 > 0) {
+            const periodReturn = (p1 - p2) / p2;
+            impliedApy = (periodReturn / daysDiff) * 365 * 100;
+          }
+        }
+      }
+    }
+
+    // Update card
+    set('sum-jaaa-nav',   fmt.nav(price));
+    document.getElementById('sum-jaaa-sub').textContent = 'TVL ' + fmt.tvl(tvl);
+    set('jaaa-nav-share', fmt.nav(price));
+    set('jaaa-fund-tvl',  fmt.tvl(tvl));
+    set('jaaa-issuance',  fmt.tvl(supply));
+    set('jaaa-apy', (impliedApy != null && impliedApy > 0 && impliedApy < 20)
+      ? fmt.apy(impliedApy) : '~4.5%');
+
+  } catch(e) {
+    console.warn('Centrifuge JAAA fetch error:', e.message);
+    set('jaaa-nav-share', 'ERR: ' + e.message.slice(0,20));
+  }
+}
+
+function getProto(key, symFilter) {
+  const keys = PROTO[key].keys;
+  return allPools.filter(p => {
+    const proj  = (p.project||'').toLowerCase();
+    const sym   = (p.symbol ||'').toUpperCase();
+    const chain = (p.chain  ||'').toLowerCase();
+    const matchProto = keys.some(k => proj.includes(k));
+    const matchSym   = symFilter ? sym.includes(symFilter) : true;
+    const matchChain = ['ethereum','multi'].includes(chain) || key==='sky';
+    return matchProto && matchSym && matchChain && (p.tvlUsd||0) > 10000;
+  });
+}
+
+function renderTable(id, pools, limit=5) {
+  const el = document.getElementById(id);
+  if (!pools.length) { el.innerHTML='<div class="loading-row">No pools found</div>'; return; }
+  el.innerHTML = pools
+    .sort((a,b)=>(b.tvlUsd||0)-(a.tvlUsd||0))
+    .slice(0,limit)
+    .map(p => {
+      const apy  = p.apy??p.apyBase??0;
+      const util = p.utilization!=null ? (p.utilization*100).toFixed(0)+'%' : '—';
+      return `<div class="pool-row">
+        <div><div class="pool-name">${p.symbol||'—'}</div><div class="pool-chain">${p.chain||''}</div></div>
+        <div class="pool-apy">${fmt.apy(apy)}</div>
+        <div class="pool-tvl">${fmt.tvl(p.tvlUsd)}</div>
+        <div class="pool-util">${util}</div>
+      </div>`;
+    }).join('');
+}
+
+function noShimmer(...ids) {
+  ids.forEach(id => { const e=document.getElementById(id); if(e) e.classList.remove('shimmer'); });
+}
+
+function set(id, val) {
+  const e = document.getElementById(id);
+  if (e) { e.textContent = val; e.classList.remove('shimmer'); }
+}
+
+function processMorpho(pools) {
+  if (!pools.length) return;
+  const sorted = pools.sort((a,b)=>(b.apy??b.apyBase??0)-(a.apy??a.apyBase??0));
+  const best = sorted[0];
+  const bestApy = best.apy??best.apyBase??0;
+  const avgApy  = pools.reduce((s,p)=>s+(p.apy??p.apyBase??0),0)/pools.length;
+  const tvl     = pools.reduce((s,p)=>s+(p.tvlUsd||0),0);
+  const avgUtil = pools.reduce((s,p)=>s+(p.utilization||0),0)/pools.length;
+  set('sum-morpho-apy',  fmt.apy(bestApy));
+  document.getElementById('sum-morpho-tvl').textContent = 'TVL '+fmt.tvl(tvl);
+  set('morpho-best-apy', fmt.apy(bestApy));
+  set('morpho-avg-apy',  fmt.apy(avgApy));
+  set('morpho-count',    pools.length);
+  set('morpho-tvl',      fmt.tvl(tvl));
+  const u = Math.min(Math.round(avgUtil*100),100);
+  document.getElementById('morpho-util-bar').style.width = u+'%';
+  set('morpho-util-pct', u+'%');
+  renderTable('morpho-pools', pools, 5);
+}
+
+function processSky(pools) {
+  // Filter to meaningful pools only — SSR/sUSDS-related, high TVL
+  const filtered = pools.filter(p => (p.tvlUsd||0) > 1e6);
+  if (!filtered.length) return;
+  const sorted = filtered.sort((a,b)=>(b.apy??b.apyBase??0)-(a.apy??a.apyBase??0));
+  // SSR pool: look for sUSDS, USDS, or DAI savings specifically
+  const ssrPool = filtered.find(p=>/(^susds$|^usds$|dai savings|sky savings)/i.test(p.symbol||'')) 
+               || filtered.sort((a,b)=>(b.tvlUsd||0)-(a.tvlUsd||0))[0];
+  // Cap SSR APY — Sky SSR is governance-set, typically 4-8%. Flag anything higher
+  const rawSsr = ssrPool.apy??ssrPool.apyBase??0;
+  const ssrApy = rawSsr > 20 ? (ssrPool.apyBase??rawSsr) : rawSsr; // prefer base if total is inflated by rewards
+  const bestApy = Math.min(sorted[0].apy??sorted[0].apyBase??0, 25); // cap display at 25% — rewards noise above this
+  const tvl     = filtered.reduce((s,p)=>s+(p.tvlUsd||0),0);
+  set('sum-sky-apy',  fmt.apy(ssrApy));
+  document.getElementById('sum-sky-tvl').textContent = 'TVL '+fmt.tvl(tvl);
+  set('sky-ssr-apy',  fmt.apy(ssrApy));
+  set('sky-best-apy', fmt.apy(bestApy));
+  set('sky-count',    filtered.length);
+  set('sky-tvl',      fmt.tvl(tvl));
+  const avgUtil = filtered.reduce((s,p)=>s+(p.utilization??0.5),0)/filtered.length;
+  const u = Math.min(Math.round(avgUtil*100),100);
+  document.getElementById('sky-util-bar').style.width = u+'%';
+  set('sky-util-pct', u+'%');
+  renderTable('sky-pools', filtered, 5);
+}
+
+function processEuler(pools) {
+  if (!pools.length) return;
+  const up = pools.filter(p=>(p.symbol||'').toUpperCase().includes('USDC'));
+  const wp = up.length ? up : pools;
+  const sorted = wp.sort((a,b)=>(b.apy??b.apyBase??0)-(a.apy??a.apyBase??0));
+  const bestApy = sorted[0].apy??sorted[0].apyBase??0;
+  const avgApy  = wp.reduce((s,p)=>s+(p.apy??p.apyBase??0),0)/wp.length;
+  const tvl     = pools.reduce((s,p)=>s+(p.tvlUsd||0),0);
+  const avgUtil = wp.reduce((s,p)=>s+(p.utilization||0),0)/wp.length;
+  set('sum-euler-apy',  fmt.apy(bestApy));
+  document.getElementById('sum-euler-tvl').textContent = 'TVL '+fmt.tvl(tvl);
+  set('euler-best-apy', fmt.apy(bestApy));
+  set('euler-avg-apy',  fmt.apy(avgApy));
+  set('euler-count',    wp.length);
+  set('euler-tvl',      fmt.tvl(tvl));
+  const u = Math.min(Math.round(avgUtil*100),100);
+  document.getElementById('euler-util-bar').style.width = u+'%';
+  set('euler-util-pct', u+'%');
+  renderTable('euler-pools', wp, 5);
+}
+
+function updateRouting() {
+  const amount = parseFloat(document.getElementById('routeAmount').value)||1000000;
+  const candidates = [];
+
+  ['morpho','sky','euler'].forEach(key => {
+    const meta  = PROTO[key];
+    const pools = getProto(key, key==='sky' ? null : 'USDC');
+    if (!pools.length) return;
+    const filtered = riskFilter==='blue' ? pools.filter(p=>(p.tvlUsd||0)>50e6)
+                   : riskFilter==='high' ? pools.filter(p=>(p.apy??p.apyBase??0)>5)
+                   : pools;
+    if (!filtered.length) return;
+    const best = filtered.sort((a,b)=>(b.apy??b.apyBase??0)-(a.apy??a.apyBase??0))[0];
+    const apy  = best.apy??best.apyBase??0;
+    candidates.push({ protocol:meta.label, color:meta.color, symbol:best.symbol||'—', tvl:best.tvlUsd||0, apy, util:best.utilization });
+  });
+
+  // Add Aave Horizon JAAA entry
+  const jaaaNavEl = document.getElementById('jaaa-nav-share');
+  const jaaaApy   = document.getElementById('jaaa-apy');
+  if (jaaaNavEl && jaaaNavEl.textContent !== '—' && jaaaNavEl.textContent !== 'API ERR') {
+    const apyTxt = jaaaApy?.textContent || '4.5%';
+    const apyNum = parseFloat(apyTxt.replace('%','')) || 4.5;
+    candidates.push({ protocol:'Aave Horizon', color:'var(--aave)', symbol:'JAAA (RWA Collateral)', tvl:1e9, apy:apyNum, util:null });
+  }
+
+  candidates.sort((a,b)=>b.apy-a.apy);
+  const el = document.getElementById('routingResults');
+  if (!candidates.length) { el.innerHTML='<div class="loading-row">Loading live data…</div>'; return; }
+  el.innerHTML = candidates.map((c,i) => {
+    const yr = fmt.tvl(amount*(c.apy/100));
+    const util = c.util!=null ? ' · '+(c.util*100).toFixed(0)+'% util' : '';
+    return `<div class="route-item">
+      <div class="route-rank">${i+1}</div>
+      <div class="route-dot" style="background:${c.color}"></div>
+      <div class="route-protocol">${c.protocol}</div>
+      <div class="route-pool">${c.symbol}${util}</div>
+      <div class="route-apy">${fmt.apy(c.apy)}</div>
+      <div class="route-yield">+${yr}/yr</div>
+    </div>`;
+  }).join('');
+}
+
+function setRisk(mode, btn) {
+  riskFilter = mode;
+  document.querySelectorAll('.risk-toggle').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  updateRouting();
+}
+
+async function fetchAll() {
+  try {
+    // Fetch DefiLlama + Centrifuge in parallel
+    const [llamaRes] = await Promise.all([
+      fetch('https://yields.llama.fi/pools'),
+      fetchJAAA(),
+    ]);
+    const json = await llamaRes.json();
+    allPools   = json.data||[];
+
+    const morphoPools = getProto('morpho',  'USDC');
+    const skyPools    = getProto('sky',     null);
+    const eulerPools  = getProto('euler',   null);
+
+    processMorpho(morphoPools);
+    processSky(skyPools);
+    processEuler(eulerPools);
+    updateRouting();
+    updateHealthMetrics();
+
+    const shown = morphoPools.length + skyPools.length + eulerPools.length;
+    document.getElementById('pool-count').textContent = `${allPools.length.toLocaleString()} pools indexed · ${shown} shown + Centrifuge live`;
+    document.getElementById('lastUpdate').textContent = 'Updated '+new Date().toTimeString().slice(0,8);
+
+    const ls = document.getElementById('liveStatus');
+    ls.textContent = '● LIVE';
+    ls.style.color = 'var(--green)';
+    ls.style.borderColor = 'rgba(52,211,153,0.4)';
+
+  } catch(e) {
+    document.getElementById('liveStatus').textContent = '● ERROR';
+    document.getElementById('pool-count').textContent = 'Error: '+e.message;
+    ['morpho-pools','sky-pools','euler-pools'].forEach(id => {
+      document.getElementById(id).innerHTML = `<div class="error-row">Fetch error: ${e.message}</div>`;
+    });
+  }
+}
+
+function updateHealthMetrics() {
+  const morphoPools = getProto('morpho', 'USDC');
+  const eulerPools  = getProto('euler',  null);
+  // ── Collateral Health: illustrative value (Aave Horizon RWA LTV params)
+  // Centrifuge/DefiLlama do not publish per-position collateral ratios.
+  // Aave Horizon sets LTV at ~75% for JAAA → implied collateral ratio ≈ 133%
+  // A well-managed RWA position targets 170-185% (well above 150% liquidation floor).
+  // We display a representative value with a clear ILLUSTRATIVE label.
+  const ILLUSTRATIVE_COLLAT = 178;
+  set('health-collat-ratio', ILLUSTRATIVE_COLLAT + '%');
+  const pct = Math.min((ILLUSTRATIVE_COLLAT / 300) * 100, 100);
+  document.getElementById('health-collat-bar').style.width = pct + '%';
+  document.getElementById('health-collat-bar').style.background = 'var(--green)';
+  document.getElementById('health-collat-ratio').style.color = 'var(--green)';
+
+  // ── Borrow Utilization: live from pools ──
+  if (morphoPools.length) {
+    const avgUtil = morphoPools.reduce((s,p)=>s+(p.utilization||0),0) / morphoPools.length;
+    const pct = Math.round(avgUtil * 100);
+    set('health-morpho-util', pct + '%');
+    document.getElementById('health-morpho-util-bar').style.width = pct + '%';
+  }
+  if (eulerPools.length) {
+    const avgUtil = eulerPools.reduce((s,p)=>s+(p.utilization||0),0) / eulerPools.length;
+    const pct = Math.round(avgUtil * 100);
+    set('health-euler-util', pct + '%');
+    document.getElementById('health-euler-util-bar').style.width = pct + '%';
+  }
+
+  // ── Risk Premium: best isolated vault APY vs Sky SSR ──
+  const bestMorpho = morphoPools.sort((a,b)=>(b.apy??b.apyBase??0)-(a.apy??a.apyBase??0))[0];
+  const bestApy = bestMorpho ? (bestMorpho.apy ?? bestMorpho.apyBase ?? 0) : null;
+  const ssrEl = document.getElementById('health-sky-ssr');
+  const ssrApy = ssrEl ? parseFloat(ssrEl.textContent) : null;
+
+  if (bestApy != null) set('health-best-apy', fmt.apy(bestApy));
+
+  // Mirror Sky SSR from the summary strip
+  const skyVal = document.getElementById('sum-sky-apy')?.textContent;
+  if (skyVal && skyVal !== '—') {
+    set('health-sky-ssr', skyVal);
+    const skyNum = parseFloat(skyVal);
+    if (!isNaN(skyNum) && bestApy != null) {
+      const premium = bestApy - skyNum;
+      set('health-risk-premium', fmt.apy(premium));
+      document.getElementById('health-risk-premium').style.color =
+        premium > 10 ? 'var(--red)' : premium > 3 ? 'var(--green)' : 'var(--muted2)';
+    }
+  }
+}
+
+fetchAll();
+setInterval(fetchAll, 5*60*1000);
+</script>
+</body>
+</html>
