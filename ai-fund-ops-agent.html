@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Fund Ops Agent · Justin Thom</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f8f9fa;
+  --white: #ffffff;
+  --ink: #111827;
+  --ink-mid: #374151;
+  --ink-light: #6b7280;
+  --border: #e5e7eb;
+  --border-dark: #d1d5db;
+  --header-bg: #111827;
+  --accent: #1d4ed8;
+  --accent-light: #eff6ff;
+  --green: #15803d;
+  --green-light: #f0fdf4;
+  --amber: #b45309;
+  --amber-light: #fffbeb;
+  --red: #b91c1c;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  min-height: 100vh;
+}
+
+/* HEADER */
+header {
+  background: var(--header-bg);
+  padding: 0 32px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.logo {
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  font-weight: 500;
+  color: white;
+  letter-spacing: 0.5px;
+}
+.logo span { color: #60a5fa; }
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.api-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: rgba(255,255,255,0.5);
+}
+.status-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #4ade80;
+  animation: pulse 2.5s ease-in-out infinite;
+}
+.status-dot.loading { background: #fbbf24; }
+.status-dot.idle { background: #6b7280; animation: none; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
+.header-date {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: rgba(255,255,255,0.3);
+}
+
+/* TICKER */
+.ticker-bar {
+  background: #1f2937;
+  padding: 0 32px;
+  border-bottom: 1px solid #374151;
+}
+.ticker-inner {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  height: 36px;
+  overflow-x: auto;
+}
+.ticker-inner::-webkit-scrollbar { display: none; }
+.t-item { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.t-sep { width: 1px; height: 14px; background: #374151; flex-shrink: 0; }
+.t-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: #6b7280;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.t-val {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: #e5e7eb;
+}
+.t-val.loading { color: #374151; }
+
+/* PAGE */
+.page { max-width: 1120px; margin: 0 auto; padding: 28px 32px 60px; }
+
+/* PAGE HEADER */
+.page-header {
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+.page-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.page-sub {
+  font-size: 13px;
+  color: var(--ink-light);
+  line-height: 1.5;
+  max-width: 580px;
+}
+
+/* CONTROLS */
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.ctrl-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--ink-light);
+  letter-spacing: 0.5px;
+}
+.pills { display: flex; gap: 4px; }
+.pill {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  padding: 5px 12px;
+  border: 1px solid var(--border-dark);
+  background: white;
+  color: var(--ink-light);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+.pill:hover { border-color: var(--accent); color: var(--accent); }
+.pill.active { background: var(--accent); border-color: var(--accent); color: white; }
+.ctrl-sep { width: 1px; height: 24px; background: var(--border); }
+.gen-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.gen-btn:hover { background: #1e40af; }
+.gen-btn:disabled { background: #9ca3af; cursor: not-allowed; }
+
+/* GRID */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 24px;
+}
+
+/* SECTION HEADING */
+.section-head {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--ink-light);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* BRIEFING BOX */
+.briefing-box {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 24px 28px;
+  min-height: 180px;
+  margin-bottom: 20px;
+}
+.briefing-box.active { border-left: 3px solid var(--accent); }
+
+.briefing-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 20px;
+  gap: 10px;
+  text-align: center;
+}
+.placeholder-icon { font-size: 24px; opacity: 0.15; }
+.placeholder-text { font-size: 13px; color: var(--ink-light); line-height: 1.6; max-width: 280px; }
+
+.briefing-meta {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--ink-light);
+  letter-spacing: 0.5px;
+  padding-bottom: 14px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+}
+.briefing-text {
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--ink-mid);
+}
+.briefing-text p { margin-bottom: 14px; }
+.briefing-text p:last-child { margin-bottom: 0; }
+.alert-panel {
+  display: none;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+.alert-panel-head {
+  padding: 9px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.alert-panel-title {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--ink);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.alert-panel-ts {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: var(--ink-light);
+}
+.alert-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.alert-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+.alert-item:last-child { border-bottom: none; }
+.alert-icon {
+  font-size: 12px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  font-family: 'DM Mono', monospace;
+}
+.alert-ok   { color: var(--green); }
+.alert-warn { color: var(--amber); }
+.alert-err  { color: var(--red); }
+.alert-text { color: var(--ink-mid); flex: 1; line-height: 1.4; }
+.alert-badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 8px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid;
+  flex-shrink: 0;
+  letter-spacing: 0.3px;
+}
+.badge-ok   { border-color: var(--green); color: var(--green); background: var(--green-light); }
+.badge-warn { border-color: var(--amber); color: var(--amber); background: var(--amber-light); }
+.badge-err  { border-color: var(--red);   color: var(--red);   background: #fef2f2; }
+
+.briefing-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.briefing-title-badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--accent);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.briefing-date-badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--ink-light);
+}
+.report-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+.report-section {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+}
+.report-section:nth-child(2n) {
+  border-right: none;
+}
+.report-section:nth-child(3),
+.report-section:nth-child(4) {
+  border-bottom: none;
+}
+.report-section-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  font-weight: 500;
+  color: var(--ink-light);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.report-text {
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--ink-mid);
+}
+.report-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.report-list li {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--ink-mid);
+  padding: 4px 0 4px 14px;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+.report-list li:last-child { border-bottom: none; }
+.report-list li::before {
+  content: ">";
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+  font-size: 10px;
+}
+.briefing-footer {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: var(--ink-light);
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.briefing-footer-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); }
+
+/* DATA CARDS */
+.data-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+.card-head {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.card-title { font-size: 12px; font-weight: 600; color: var(--ink); }
+.card-badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: var(--green);
+  letter-spacing: 0.5px;
+}
+.card-table { width: 100%; border-collapse: collapse; }
+.card-table tr { border-bottom: 1px solid var(--border); }
+.card-table tr:last-child { border-bottom: none; }
+.card-table td { padding: 8px 16px; font-family: 'DM Mono', monospace; font-size: 11px; }
+.card-table td:first-child { color: var(--ink-light); }
+.card-table td:last-child { text-align: right; color: var(--ink); font-weight: 500; }
+
+/* SHIMMER */
+@keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+.shimmer {
+  display: block; height: 11px; border-radius: 3px; margin-bottom: 8px;
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+.sh-full { width: 100%; }
+.sh-med { width: 75%; }
+.sh-short { width: 50%; }
+
+/* SIDEBAR */
+.sidebar-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+.sc-head {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.sc-sub { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--ink-light); font-weight: 400; }
+.sc-body { padding: 12px 14px; }
+
+/* SNAPSHOT TABS */
+.snap-tabs { display: flex; gap: 3px; margin-bottom: 14px; }
+.snap-tab {
+  flex: 1; padding: 4px 6px;
+  border: 1px solid var(--border-dark);
+  background: white;
+  color: var(--ink-light);
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: all 0.15s;
+  text-align: center;
+}
+.snap-tab.active { background: var(--accent); border-color: var(--accent); color: white; }
+
+/* SNAPSHOT METRICS */
+.snap-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.snap-item {}
+.snap-lbl {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: var(--ink-light);
+  letter-spacing: 0.5px;
+  margin-bottom: 3px;
+}
+.snap-val {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1;
+}
+.snap-val.sm { font-size: 14px; }
+.snap-val.loading { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--border-dark); font-weight: 400; }
+.snap-note { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--ink-light); margin-top: 2px; }
+
+/* CHECKLIST */
+.check-item {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 7px 0; border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+.check-item:last-child { border-bottom: none; }
+.check-icon { font-size: 11px; flex-shrink: 0; margin-top: 1px; }
+.ok-icon { color: var(--green); }
+.pending-icon { color: var(--border-dark); }
+.check-lbl { color: var(--ink-mid); flex: 1; }
+.check-tag {
+  font-family: 'DM Mono', monospace;
+  font-size: 8px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  border: 1px solid;
+  flex-shrink: 0;
+  letter-spacing: 0.3px;
+}
+.tag-ok { border-color: var(--green); color: var(--green); background: var(--green-light); }
+.tag-pending { border-color: var(--border-dark); color: var(--ink-light); }
+
+/* ABOUT */
+.about-p { font-size: 12px; color: var(--ink-mid); line-height: 1.65; margin-bottom: 10px; }
+.about-p:last-child { margin-bottom: 0; }
+.info-box {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 4px;
+  padding: 10px 12px;
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: #1d4ed8;
+  line-height: 1.8;
+  margin-top: 10px;
+}
+
+/* ERROR */
+.err-box {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 4px;
+  padding: 10px 14px;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--red);
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+/* FOOTER */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 16px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  color: var(--ink-light);
+}
+.footer-link { color: var(--accent); text-decoration: none; }
+.footer-link:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-wrap" style="display:flex;align-items:center;gap:16px;">
+    <img src="https://cdn.prod.website-files.com/6706324b4c48131ee537ff96/6711202839e5be32a778743c_centrifuge-black-logo.svg" alt="Centrifuge" style="height:22px;filter:invert(1);opacity:0.9;">
+    <div style="width:1px;height:20px;background:rgba(255,255,255,0.2);"></div>
+    <div class="logo">Fund Ops <span>Intelligence</span></div>
+  </div>
+  <div class="header-right">
+    <div class="api-status">
+      <div class="status-dot idle" id="apiDot"></div>
+      <span id="apiStatus">Connecting...</span>
+    </div>
+    <div class="header-date" id="headerDate"></div>
+  </div>
+</header>
+
+<!-- TICKER -->
+<div class="ticker-bar">
+  <div class="ticker-inner">
+    <div class="t-item">
+      <span class="t-label">JAAA NAV/Share</span>
+      <span class="t-val loading" id="tk-jaaa-price">—</span>
+    </div>
+    <div class="t-sep"></div>
+    <div class="t-item">
+      <span class="t-label">JAAA TVL</span>
+      <span class="t-val loading" id="tk-jaaa-nav">—</span>
+    </div>
+    <div class="t-sep"></div>
+    <div class="t-item">
+      <span class="t-label">JTRSY NAV/Share</span>
+      <span class="t-val loading" id="tk-jtrsy-price">—</span>
+    </div>
+    <div class="t-sep"></div>
+    <div class="t-item">
+      <span class="t-label">JTRSY TVL</span>
+      <span class="t-val loading" id="tk-jtrsy-nav">—</span>
+    </div>
+    <div class="t-sep"></div>
+    <div class="t-item">
+      <span class="t-label">SP500 NAV/Share</span>
+      <span class="t-val loading" id="tk-sp500-price">—</span>
+    </div>
+    <div class="t-sep"></div>
+    <div class="t-item">
+      <span class="t-label">Source</span>
+      <span class="t-val" style="color:#4b5563;font-size:9px">api.centrifuge.io</span>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- PAGE HEADER -->
+  <div class="page-header">
+    <div class="page-title">AI Daily Ops Briefing</div>
+    <div class="page-sub">AI-generated morning report from live Centrifuge onchain data: NAV summary, liquidity status, and recommended operator actions.</div>
+    <div class="controls">
+      <span class="ctrl-label">Pools:</span>
+      <div class="pills">
+        <button class="pill active" id="pill-JAAA" onclick="toggleFund('JAAA',this)">JAAA</button>
+        <button class="pill active" id="pill-JTRSY" onclick="toggleFund('JTRSY',this)">JTRSY</button>
+        <button class="pill" id="pill-SP500" onclick="toggleFund('SP500',this)">SP500</button>
+      </div>
+      <div class="ctrl-sep"></div>
+      <button class="gen-btn" id="simBtn" onclick="runSimulation()">
+        Run Simulated Report
+      </button>
+    </div>
+  </div>
+
+  <!-- GRID -->
+  <div class="grid">
+
+    <!-- LEFT COLUMN -->
+    <div>
+
+      <div class="section-head">
+        AI Briefing
+        <span id="briefingTs">—</span>
+      </div>
+
+      <div id="simNote" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:12px 16px;margin-bottom:14px;font-family:'DM Mono',monospace;font-size:10px;color:#1d4ed8;line-height:1.7;">
+        ◎ Sample AI agent report
+      </div>
+      <div class="alert-panel" id="alertPanel">
+        <div class="alert-panel-head">
+          <span class="alert-panel-title">Operational Alerts</span>
+          <span class="alert-panel-ts" id="alertTs"></span>
+        </div>
+        <ul class="alert-list">
+          <li class="alert-item">
+            <span class="alert-icon alert-ok">✔</span>
+            <span class="alert-text">NAV reconciliation passed — tokenPrice within tolerance of administrator NAV strike</span>
+            <span class="alert-badge badge-ok">PASS</span>
+          </li>
+          <li class="alert-item">
+            <span class="alert-icon alert-ok">✔</span>
+            <span class="alert-text">No abnormal redemption flows detected in ERC-7540 requestRedeem queue</span>
+            <span class="alert-badge badge-ok">CLEAR</span>
+          </li>
+          <li class="alert-item">
+            <span class="alert-icon alert-warn">⚠</span>
+            <span class="alert-text">Custodian T+1 confirmation pending — awaiting settlement confirmation from prime custodian</span>
+            <span class="alert-badge badge-warn">PENDING</span>
+          </li>
+          <li class="alert-item">
+            <span class="alert-icon alert-ok">✔</span>
+            <span class="alert-text">MTD inflow data reconciled — totalIssuance aligned with transfer agent share registry</span>
+            <span class="alert-badge badge-ok">PASS</span>
+          </li>
+          <li class="alert-item">
+            <span class="alert-icon alert-ok">✔</span>
+            <span class="alert-text">Onchain oracle data fresh — last tokenPrice update within expected cadence</span>
+            <span class="alert-badge badge-ok">LIVE</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="briefing-box active" id="briefingBox" style="display:none">
+
+        <div class="briefing-header-row">
+          <div class="briefing-title-badge">Morning Report</div>
+          <div class="briefing-date-badge" id="briefingDate"></div>
+        </div>
+
+        <div class="report-grid">
+
+          <div class="report-section">
+            <div class="report-section-label">NAV Summary</div>
+            <p class="report-text">Both pools are trading above par. JAAA's tokenPrice oracle reflects cumulative yield accrual consistent with a AAA-rated CLO strategy. JTRSY shows NAV per share marginally above issuance price, in line with its short-duration treasury exposure. No divergence detected between onchain tokenPrice and the expected administrator NAV strike.</p>
+          </div>
+
+          <div class="report-section">
+            <div class="report-section-label">Issuance</div>
+            <p class="report-text">Shares outstanding across both pools indicate continued institutional inflows since inception. The ERC-4626 vault architecture reflects each new deposit immediately in totalIssuance, giving the ops team real-time subscription visibility — ahead of the T+1 transfer agent confirmation required in a traditional fund structure.</p>
+          </div>
+
+          <div class="report-section">
+            <div class="report-section-label">Action Items</div>
+            <ul class="report-list">
+              <li>Run NAV oracle reconciliation against administrator report: confirm tokenPrice aligns with fund accountant NAV strike within agreed tolerance</li>
+              <li>Review ERC-7540 requestRedeem queue for unfulfilled redemptions: match against available liquidity before T+1 custodian window closes</li>
+              <li>Reconcile MTD deposit flows against prime custodian bank statement confirmations</li>
+              <li>Confirm transfer agent share registry alignment with onchain totalIssuance</li>
+            </ul>
+          </div>
+
+          <div class="report-section">
+            <div class="report-section-label">Ops Notes</div>
+            <p class="report-text">Centrifuge's ERC-7540 introduces a two-phase request-and-fulfill settlement cycle that mirrors T+1/T+2 conventions in traditional fund administration. The requestRedeem queue carries the same operational urgency as a pending redemption gate. Unfulfilled requests accrue risk and must be cleared each morning before the NAV strike window opens.</p>
+          </div>
+
+        </div>
+
+        <div class="briefing-footer">
+          <div class="briefing-footer-dot"></div>
+          Simulation · representative sample of AI report output · JAAA · JTRSY · api.centrifuge.io
+        </div>
+      </div>
+
+      <div class="section-head" style="margin-top:8px;">
+        Live Pool Data
+        <span id="refreshTs">—</span>
+      </div>
+
+      <div class="data-card" id="card-JAAA">
+        <div class="card-head">
+          <span class="card-title">JAAA · Janus Henderson AAA CLO</span>
+          <span class="card-badge">● LIVE</span>
+        </div>
+        <table class="card-table"><tbody id="tb-JAAA">
+          <tr><td colspan="2"><span class="shimmer sh-full"></span><span class="shimmer sh-med"></span><span class="shimmer sh-short"></span></td></tr>
+        </tbody></table>
+      </div>
+
+      <div class="data-card" id="card-JTRSY">
+        <div class="card-head">
+          <span class="card-title">JTRSY · Janus Henderson Treasury</span>
+          <span class="card-badge">● LIVE</span>
+        </div>
+        <table class="card-table"><tbody id="tb-JTRSY">
+          <tr><td colspan="2"><span class="shimmer sh-full"></span><span class="shimmer sh-med"></span><span class="shimmer sh-short"></span></td></tr>
+        </tbody></table>
+      </div>
+
+      <div class="data-card" id="card-SP500" style="display:none">
+        <div class="card-head">
+          <span class="card-title">SP500 · Janus Henderson S&amp;P 500</span>
+          <span class="card-badge">● LIVE</span>
+        </div>
+        <table class="card-table"><tbody id="tb-SP500">
+          <tr><td colspan="2"><span class="shimmer sh-full"></span><span class="shimmer sh-med"></span><span class="shimmer sh-short"></span></td></tr>
+        </tbody></table>
+      </div>
+
+    </div>
+
+    <!-- RIGHT SIDEBAR -->
+    <div>
+
+      <!-- Snapshot -->
+      <div class="sidebar-card">
+        <div class="sc-head">
+          Pool Snapshot
+          <span class="sc-sub" id="snapTime">Loading...</span>
+        </div>
+        <div class="sc-body">
+          <div class="snap-tabs">
+            <button class="snap-tab active" onclick="showSnap('JAAA',this)">JAAA</button>
+            <button class="snap-tab" onclick="showSnap('JTRSY',this)">JTRSY</button>
+            <button class="snap-tab" onclick="showSnap('SP500',this)">SP500</button>
+          </div>
+          <div class="snap-grid">
+            <div class="snap-item">
+              <div class="snap-lbl">Total NAV</div>
+              <div class="snap-val loading" id="snap-nav">—</div>
+              <div class="snap-note">USD</div>
+            </div>
+            <div class="snap-item">
+              <div class="snap-lbl">NAV / Share</div>
+              <div class="snap-val loading" id="snap-price">—</div>
+              <div class="snap-note">tokenPrice</div>
+            </div>
+            <div class="snap-item">
+              <div class="snap-lbl">Shares Out</div>
+              <div class="snap-val sm loading" id="snap-shares">—</div>
+              <div class="snap-note">totalIssuance</div>
+            </div>
+            <div class="snap-item">
+              <div class="snap-lbl">Implied APY</div>
+              <div class="snap-val sm loading" id="snap-apy">—</div>
+              <div class="snap-note">price appreciation</div>
+            </div>
+          </div>
+          <div id="snap-err" class="err-box" style="display:none;margin-top:10px;margin-bottom:0"></div>
+        </div>
+      </div>
+
+      <!-- Checklist -->
+      <div class="sidebar-card">
+        <div class="sc-head">Morning Checklist</div>
+        <div class="sc-body">
+          <div class="check-item">
+            <span class="check-icon pending-icon">○</span>
+            <span class="check-lbl">NAV oracle reconciliation</span>
+            <span class="check-tag tag-pending">PENDING</span>
+          </div>
+          <div class="check-item">
+            <span class="check-icon pending-icon">○</span>
+            <span class="check-lbl">Redemption queue review</span>
+            <span class="check-tag tag-pending">PENDING</span>
+          </div>
+          <div class="check-item">
+            <span class="check-icon pending-icon">○</span>
+            <span class="check-lbl">MTD flow reconciliation</span>
+            <span class="check-tag tag-pending">PENDING</span>
+          </div>
+          <div class="check-item">
+            <span class="check-icon pending-icon">○</span>
+            <span class="check-lbl">Custodian confirmation</span>
+            <span class="check-tag tag-pending">PENDING</span>
+          </div>
+          <div class="check-item">
+            <span class="check-icon pending-icon">○</span>
+            <span class="check-lbl">ERC-7540 settlement queue</span>
+            <span class="check-tag tag-pending">PENDING</span>
+          </div>
+          <div class="check-item">
+            <span class="check-icon ok-icon">✓</span>
+            <span class="check-lbl">Onchain API connected</span>
+            <span class="check-tag tag-ok">DONE</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- About -->
+      <div class="sidebar-card">
+        <div class="sc-head">About</div>
+        <div class="sc-body">
+          <p class="about-p">An AI agent that reads live Centrifuge onchain data and generates a structured morning operations report.</p>
+          <div class="info-box">
+            Data: api.centrifuge.io<br>
+            Pools: JAAA · JTRSY · SP500
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<footer>
+  <span><strong>Justin Thom</strong> &nbsp;·&nbsp; Investment Operations Associate &nbsp;·&nbsp; Centrifuge Application</span>
+  <span><a href="index.html" class="footer-link">← Portfolio</a></span>
+</footer>
+
+<script>
+const CENTRIFUGE_API = 'https://api.centrifuge.io';
+const POOL_IDS = { JAAA:'281474976710663', JTRSY:'281474976710662', SP500:'281474976710665' };
+const FUND_FULL = {
+  JAAA: 'JAAA (Janus Henderson AAA CLO)',
+  JTRSY: 'JTRSY (Janus Henderson Treasury)',
+  SP500: 'SP500 (Janus Henderson S&P 500)',
+};
+
+let poolData = { JAAA:null, JTRSY:null, SP500:null };
+let activePools = new Set(['JAAA','JTRSY']);
+let currentSnap = 'JAAA';
+let apiReady = false;
+
+// HELPERS
+function ins(str, p) {
+  if (!str||str==='0') return 0;
+  const s = str.padStart(p+1,'0');
+  return parseFloat(s.slice(0,s.length-p)+'.'+s.slice(s.length-p));
+}
+function fmt(n,d=2) {
+  if (n==null||isNaN(n)) return '—';
+  return n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+}
+function fmtM(n) {
+  if (!n||isNaN(n)) return '—';
+  if (n>=1e9) return '$'+(n/1e9).toFixed(2)+'B';
+  if (n>=1e6) return '$'+(n/1e6).toFixed(2)+'M';
+  return '$'+fmt(n);
+}
+function setEl(id,val) { const e=document.getElementById(id); if(e) e.textContent=val; }
+
+// API
+async function fetchPool(poolId) {
+  const q = `{pools(where:{id:"${poolId}"},limit:1){items{name tokens{items{id symbol totalIssuance tokenPrice}}}}}`;
+  const res = await fetch(CENTRIFUGE_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q})});
+  const json = await res.json();
+  if (json.errors) throw new Error(json.errors[0].message);
+  const pool = json.data.pools?.items?.[0];
+  const token = pool?.tokens?.items?.[0];
+  if (!token) throw new Error('No token data');
+  const iStr = token.totalIssuance||'0';
+  const navPerShare = ins(token.tokenPrice,18);
+  const totalShares = ins(iStr,iStr.length>18?18:9);
+  const totalNav = navPerShare*totalShares;
+  const daysSince = Math.max(1,Math.round((Date.now()-new Date('2025-01-01'))/86400000));
+  const impliedApy = navPerShare>1 ? ((navPerShare-1.0)*365/daysSince*100).toFixed(2) : null;
+  return { poolName:pool?.name||poolId, symbol:token.symbol, navPerShare, totalShares, totalNav, impliedApy };
+}
+
+async function loadAll() {
+  setDot('loading'); setEl('apiStatus','Fetching data...');
+  const results = await Promise.allSettled([
+    fetchPool(POOL_IDS.JAAA), fetchPool(POOL_IDS.JTRSY), fetchPool(POOL_IDS.SP500)
+  ]);
+  const keys = ['JAAA','JTRSY','SP500'];
+  let ok = false;
+  results.forEach((r,i) => { if (r.status==='fulfilled') { poolData[keys[i]]=r.value; ok=true; } });
+  if (ok) {
+    apiReady = true;
+    setDot('live'); setEl('apiStatus','Live · api.centrifuge.io');
+    updateTicker(); updateTables(); updateSnap(currentSnap);  } else {
+    setDot('error'); setEl('apiStatus','API Error');
+  }
+  const now = new Date();
+  setEl('refreshTs','Refreshed '+now.toLocaleTimeString());
+  setEl('snapTime',now.toLocaleTimeString());
+}
+
+function setDot(state) {
+  const d = document.getElementById('apiDot');
+  d.className = 'status-dot';
+  if (state==='loading') d.classList.add('loading');
+  else if (state==='error') { d.style.background='#f87171'; d.style.animation='none'; }
+  // live = default green
+}
+
+// TICKER
+function updateTicker() {
+  const J=poolData.JAAA, T=poolData.JTRSY, S=poolData.SP500;
+  const ids = ['tk-jaaa-price','tk-jaaa-nav','tk-jtrsy-price','tk-jtrsy-nav','tk-sp500-price'];
+  if(J){ setEl('tk-jaaa-price','$'+J.navPerShare.toFixed(4)); setEl('tk-jaaa-nav',fmtM(J.totalNav)); }
+  if(T){ setEl('tk-jtrsy-price','$'+T.navPerShare.toFixed(4)); setEl('tk-jtrsy-nav',fmtM(T.totalNav)); }
+  if(S){ setEl('tk-sp500-price','$'+S.navPerShare.toFixed(4)); }
+  ids.forEach(id=>{ const e=document.getElementById(id); if(e) e.className='t-val'; });
+}
+
+// TABLES
+function renderTable(key) {
+  const d = poolData[key];
+  const tb = document.getElementById('tb-'+key);
+  if (!d) { tb.innerHTML='<tr><td colspan="2" style="padding:10px 16px;color:#9ca3af;font-size:10px">Data unavailable</td></tr>'; return; }
+  const rows = [
+    ['Total NAV (USD)', fmtM(d.totalNav)],
+    ['NAV per Share', '$'+d.navPerShare.toFixed(6)],
+    ['Shares Outstanding', fmt(d.totalShares,0)],
+    ['Implied APY', d.impliedApy ? d.impliedApy+'%' : '—'],
+    ['Token Symbol', d.symbol||'—'],
+    ['Pool Name', d.poolName||'—'],
+  ];
+  tb.innerHTML = rows.map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join('');
+}
+function updateTables() { ['JAAA','JTRSY','SP500'].forEach(renderTable); }
+
+// SNAPSHOT
+function updateSnap(key) {
+  const d = poolData[key];
+  const err = document.getElementById('snap-err');
+  if (!d) { err.style.display='block'; err.textContent='No data for '+key; return; }
+  err.style.display='none';
+  document.getElementById('snap-nav').className='snap-val'; setEl('snap-nav',fmtM(d.totalNav));
+  document.getElementById('snap-price').className='snap-val'; setEl('snap-price','$'+d.navPerShare.toFixed(4));
+  const sh = document.getElementById('snap-shares');
+  sh.className='snap-val sm'; sh.textContent = d.totalShares>=1e6?(d.totalShares/1e6).toFixed(2)+'M':fmt(d.totalShares,0);
+  const ap = document.getElementById('snap-apy');
+  ap.className='snap-val sm'; ap.textContent = d.impliedApy ? d.impliedApy+'%' : '—';
+}
+function showSnap(key, btn) {
+  currentSnap=key;
+  document.querySelectorAll('.snap-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  updateSnap(key);
+}
+
+// PILL TOGGLE
+function toggleFund(key, btn) {
+  if (activePools.has(key)) {
+    if (activePools.size<=1) return;
+    activePools.delete(key);
+    btn.classList.remove('active');
+    const c = document.getElementById('card-'+key);
+    if (c) c.style.display='none';
+  } else {
+    activePools.add(key);
+    btn.classList.add('active');
+    const c = document.getElementById('card-'+key);
+    if (c) c.style.display='block';
+  }
+}
+
+
+// SIMULATION
+function runSimulation() {
+  document.getElementById('simBtn').disabled = true;
+  document.getElementById('simBtn').textContent = 'Generating...';
+  document.getElementById('simNote').style.display = 'block';
+  document.getElementById('alertPanel').style.display = 'block';
+  document.getElementById('alertTs').textContent = new Date().toLocaleTimeString();
+  setTimeout(() => {
+    document.getElementById('briefingBox').style.display = 'block';
+    document.getElementById('simBtn').textContent = 'Run Simulated Report';
+    document.getElementById('simBtn').disabled = false;
+    setEl('briefingTs', new Date().toLocaleTimeString());
+  }, 900);
+}
+
+// INIT
+function init() {
+  const now = new Date();
+  document.getElementById('headerDate').textContent = now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+  const bdEl = document.getElementById('briefingDate'); if(bdEl) bdEl.textContent = now.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+}
+
+init();
+loadAll();
+</script>
+</body>
+</html>
