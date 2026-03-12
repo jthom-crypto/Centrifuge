@@ -3,948 +3,1027 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Centrifuge Tokenized Assets Monitor — Justin Thom</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<title>AI Fund Ops Agent · Justin Thom</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #080c10;
-    --surface: #0d1318;
-    --border: #1a2530;
-    --accent: #00e8c6;
-    --accent2: #f7a94b;
-    --accent3: #5b8dee;
-    --danger: #ff4d6d;
-    --text: #c8d8e8;
-    --muted: #4a6070;
-    --card: #0f1a22;
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 13px;
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(0,232,198,0.07) 0%, transparent 60%);
-    pointer-events: none;
-    z-index: 0;
-  }
+:root {
+  --bg: #f8f9fa;
+  --white: #ffffff;
+  --ink: #111827;
+  --ink-mid: #374151;
+  --ink-light: #6b7280;
+  --border: #e5e7eb;
+  --border-dark: #d1d5db;
+  --header-bg: #111827;
+  --accent: #1d4ed8;
+  --accent-light: #eff6ff;
+  --green: #15803d;
+  --green-light: #f0fdf4;
+  --amber: #b45309;
+  --amber-light: #fffbeb;
+  --red: #b91c1c;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
 
-  /* HEADER */
-  header {
-    position: sticky; top: 0; z-index: 100;
-    background: rgba(8,12,16,0.92);
-    backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--border);
-    padding: 0 28px;
-    display: flex; align-items: center; justify-content: space-between;
-    height: 52px;
-  }
-  .logo {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 22px;
-    letter-spacing: 3px;
-    color: var(--accent);
-    display: flex; align-items: center; gap: 10px;
-  }
-  .logo-dot { width: 7px; height: 7px; background: var(--accent); border-radius: 50%; animation: pulse 2s infinite; }
-  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.7)} }
-  .header-right { display: flex; align-items: center; gap: 20px; }
-  .live-badge {
-    background: rgba(0,232,198,0.12);
-    border: 1px solid rgba(0,232,198,0.3);
-    color: var(--accent);
-    font-family: 'DM Mono', monospace;
-    font-size: 10px;
-    padding: 3px 10px;
-    border-radius: 2px;
-    letter-spacing: 1px;
-  }
-  .ts {
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    color: var(--muted);
-  }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  min-height: 100vh;
+}
 
-  /* LAYOUT */
-  .main { position: relative; z-index: 1; padding: 24px 28px; max-width: 1400px; margin: 0 auto; }
+/* HEADER */
+header {
+  background: var(--header-bg);
+  padding: 0 32px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.logo {
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  font-weight: 500;
+  color: white;
+  letter-spacing: 0.5px;
+}
+.logo span { color: #60a5fa; }
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.api-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: rgba(255,255,255,0.5);
+}
+.status-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #4ade80;
+  animation: pulse 2.5s ease-in-out infinite;
+}
+.status-dot.loading { background: #fbbf24; }
+.status-dot.idle { background: #6b7280; animation: none; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
+.header-date {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: rgba(255,255,255,0.3);
+}
 
-  /* FUND SELECTOR */
-  .fund-tabs { display: flex; gap: 2px; margin-bottom: 24px; }
-  .fund-tab {
-    padding: 8px 20px;
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--muted);
-    font-family: 'DM Mono', monospace;
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.2s;
-    letter-spacing: 0.5px;
-  }
-  .fund-tab.active {
-    background: rgba(0,232,198,0.1);
-    border-color: var(--accent);
-    color: var(--accent);
-  }
-  .fund-tab:hover:not(.active) { border-color: #2a3a4a; color: var(--text); }
+/* TICKER */
+.ticker-bar {
+  background: #1f2937;
+  padding: 0 32px;
+  border-bottom: 1px solid #374151;
+}
+.ticker-inner {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  height: 36px;
+  overflow-x: auto;
+}
+.ticker-inner::-webkit-scrollbar { display: none; }
+.t-item { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.t-sep { width: 1px; height: 14px; background: #374151; flex-shrink: 0; }
+.t-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: #6b7280;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.t-val {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: #e5e7eb;
+}
+.t-val.loading { color: #374151; }
 
-  /* KPI ROW */
-  .kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px; }
-  .kpi {
-    background: var(--card);
-    border: 1px solid var(--border);
-    padding: 16px 18px;
-    position: relative;
-    overflow: hidden;
-    animation: fadeUp 0.5s ease both;
-  }
-  .kpi::before {
-    content: '';
-    position: absolute; top: 0; left: 0; right: 0; height: 2px;
-    background: var(--accent-color, var(--accent));
-  }
-  .kpi-label {
-    font-size: 10px;
-    color: var(--muted);
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    margin-bottom: 8px;
-    font-family: 'DM Mono', monospace;
-  }
-  .kpi-value {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 28px;
-    letter-spacing: 1px;
-    line-height: 1;
-    color: #e8f4ff;
-  }
-  .kpi-sub {
-    font-family: 'DM Mono', monospace;
-    font-size: 10px;
-    margin-top: 6px;
-  }
-  .up { color: var(--accent); }
-  .down { color: var(--danger); }
-  .neutral { color: var(--accent2); }
+/* PAGE */
+.page { max-width: 1120px; margin: 0 auto; padding: 28px 32px 60px; }
 
-  @keyframes fadeUp {
-    from { opacity:0; transform:translateY(12px); }
-    to   { opacity:1; transform:translateY(0); }
-  }
-  .kpi:nth-child(1) { animation-delay: 0.05s; }
-  .kpi:nth-child(2) { animation-delay: 0.1s; }
-  .kpi:nth-child(3) { animation-delay: 0.15s; }
-  .kpi:nth-child(4) { animation-delay: 0.2s; }
-  .kpi:nth-child(5) { animation-delay: 0.25s; }
+/* PAGE HEADER */
+.page-header {
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+.page-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.page-sub {
+  font-size: 13px;
+  color: var(--ink-light);
+  line-height: 1.5;
+  max-width: 580px;
+}
 
-  /* GRID */
-  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
-  .grid3 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 16px; }
+/* CONTROLS */
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.ctrl-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--ink-light);
+  letter-spacing: 0.5px;
+}
+.pills { display: flex; gap: 4px; }
+.pill {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  padding: 5px 12px;
+  border: 1px solid var(--border-dark);
+  background: white;
+  color: var(--ink-light);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+.pill:hover { border-color: var(--accent); color: var(--accent); }
+.pill.active { background: var(--accent); border-color: var(--accent); color: white; }
+.ctrl-sep { width: 1px; height: 24px; background: var(--border); }
+.gen-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.gen-btn:hover { background: #1e40af; }
+.gen-btn:disabled { background: #9ca3af; cursor: not-allowed; }
 
-  .panel {
-    background: var(--card);
-    border: 1px solid var(--border);
-    padding: 18px;
-    animation: fadeUp 0.5s ease both;
-    animation-delay: 0.3s;
-  }
-  .panel-title {
-    font-family: 'DM Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 16px;
-    display: flex; align-items: center; justify-content: space-between;
-  }
-  .panel-badge {
-    background: rgba(91,141,238,0.15);
-    border: 1px solid rgba(91,141,238,0.3);
-    color: var(--accent3);
-    font-size: 9px;
-    padding: 2px 8px;
-    border-radius: 2px;
-    letter-spacing: 1px;
-  }
+/* GRID */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 24px;
+}
 
-  /* NAV CHART */
-  .nav-chart { position: relative; height: 140px; margin-bottom: 8px; }
-  canvas#navChart { width: 100% !important; height: 140px !important; }
+/* SECTION HEADING */
+.section-head {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--ink-light);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
 
-  /* FLOW TABLE */
-  .flow-table { width: 100%; border-collapse: collapse; }
-  .flow-table th {
-    font-family: 'DM Mono', monospace;
-    font-size: 9px;
-    letter-spacing: 1.5px;
-    color: var(--muted);
-    text-align: left;
-    padding: 0 0 10px 0;
-    border-bottom: 1px solid var(--border);
-  }
-  .flow-table td {
-    padding: 9px 0;
-    border-bottom: 1px solid rgba(26,37,48,0.6);
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    vertical-align: middle;
-  }
-  .flow-table tr:last-child td { border-bottom: none; }
-  .status-dot {
-    display: inline-block; width: 6px; height: 6px;
-    border-radius: 50%; margin-right: 6px;
-    vertical-align: middle;
-  }
-  .s-settled { background: var(--accent); }
-  .s-pending { background: var(--accent2); animation: pulse 1.5s infinite; }
-  .s-failed  { background: var(--danger); }
-  .hash { color: var(--accent3); font-size: 10px; }
+/* BRIEFING BOX */
+.briefing-box {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 24px 28px;
+  min-height: 180px;
+  margin-bottom: 20px;
+}
+.briefing-box.active { border-left: 3px solid var(--accent); }
 
-  /* RECONCILIATION */
-  .recon-item {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 10px 0;
-    border-bottom: 1px solid rgba(26,37,48,0.6);
-  }
-  .recon-item:last-child { border-bottom: none; }
-  .recon-label { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text); }
-  .recon-vals { text-align: right; }
-  .recon-onchain { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--accent); }
-  .recon-offchain { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); margin-top: 2px; }
-  .match-badge {
-    font-size: 9px; padding: 2px 7px; border-radius: 2px;
-    font-family: 'DM Mono', monospace; letter-spacing: 1px;
-    margin-left: 10px;
-  }
-  .match-ok { background: rgba(0,232,198,0.1); border: 1px solid rgba(0,232,198,0.3); color: var(--accent); }
-  .match-warn { background: rgba(247,169,75,0.1); border: 1px solid rgba(247,169,75,0.3); color: var(--accent2); }
-  .match-err { background: rgba(255,77,109,0.1); border: 1px solid rgba(255,77,109,0.3); color: var(--danger); }
+.briefing-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 20px;
+  gap: 10px;
+  text-align: center;
+}
+.placeholder-icon { font-size: 24px; opacity: 0.15; }
+.placeholder-text { font-size: 13px; color: var(--ink-light); line-height: 1.6; max-width: 280px; }
 
-  /* ALERT FEED */
-  .alert-item {
-    display: flex; gap: 12px; align-items: flex-start;
-    padding: 10px 0;
-    border-bottom: 1px solid rgba(26,37,48,0.5);
-    animation: fadeUp 0.4s ease both;
-  }
-  .alert-item:last-child { border-bottom: none; }
-  .alert-icon { font-size: 14px; margin-top: 1px; flex-shrink: 0; }
-  .alert-body { flex: 1; }
-  .alert-msg { font-size: 12px; line-height: 1.5; }
-  .alert-time { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); margin-top: 3px; }
+.briefing-meta {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--ink-light);
+  letter-spacing: 0.5px;
+  padding-bottom: 14px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+}
+.briefing-text {
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--ink-mid);
+}
+.briefing-text p { margin-bottom: 14px; }
+.briefing-text p:last-child { margin-bottom: 0; }
+.alert-panel {
+  display: none;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+.alert-panel-head {
+  padding: 9px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.alert-panel-title {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--ink);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.alert-panel-ts {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: var(--ink-light);
+}
+.alert-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.alert-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+.alert-item:last-child { border-bottom: none; }
+.alert-icon {
+  font-size: 12px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  font-family: 'DM Mono', monospace;
+}
+.alert-ok   { color: var(--green); }
+.alert-warn { color: var(--amber); }
+.alert-err  { color: var(--red); }
+.alert-text { color: var(--ink-mid); flex: 1; line-height: 1.4; }
+.alert-badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 8px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid;
+  flex-shrink: 0;
+  letter-spacing: 0.3px;
+}
+.badge-ok   { border-color: var(--green); color: var(--green); background: var(--green-light); }
+.badge-warn { border-color: var(--amber); color: var(--amber); background: var(--amber-light); }
+.badge-err  { border-color: var(--red);   color: var(--red);   background: #fef2f2; }
 
-  /* GAUGE */
-  .gauge-row { display: flex; gap: 16px; }
-  .gauge-item { flex: 1; }
-  .gauge-label { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); margin-bottom: 6px; letter-spacing: 1px; }
-  .gauge-bar { height: 6px; background: var(--border); border-radius: 0; overflow: hidden; margin-bottom: 4px; }
-  .gauge-fill { height: 100%; border-radius: 0; transition: width 1s ease; }
-  .gauge-val { font-family: 'DM Mono', monospace; font-size: 12px; }
+.briefing-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.briefing-title-badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--accent);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.briefing-date-badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--ink-light);
+}
+.report-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+.report-section {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+}
+.report-section:nth-child(2n) {
+  border-right: none;
+}
+.report-section:nth-child(3),
+.report-section:nth-child(4) {
+  border-bottom: none;
+}
+.report-section-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  font-weight: 500;
+  color: var(--ink-light);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.report-text {
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--ink-mid);
+}
+.report-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.report-list li {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--ink-mid);
+  padding: 4px 0 4px 14px;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+.report-list li:last-child { border-bottom: none; }
+.report-list li::before {
+  content: ">";
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+  font-size: 10px;
+}
+.briefing-footer {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: var(--ink-light);
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.briefing-footer-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); }
 
-  /* TOKEN ISSUANCE */
-  .issuance-row { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid rgba(26,37,48,0.5); }
-  .issuance-row:last-child { border-bottom: none; }
-  .issuance-chain { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); width: 80px; flex-shrink: 0; }
-  .issuance-bar-wrap { flex: 1; height: 4px; background: var(--border); }
-  .issuance-bar { height: 100%; }
-  .issuance-amount { font-family: 'DM Mono', monospace; font-size: 11px; width: 80px; text-align: right; }
+/* DATA CARDS */
+.data-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+.card-head {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.card-title { font-size: 12px; font-weight: 600; color: var(--ink); }
+.card-badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: var(--green);
+  letter-spacing: 0.5px;
+}
+.card-table { width: 100%; border-collapse: collapse; }
+.card-table tr { border-bottom: 1px solid var(--border); }
+.card-table tr:last-child { border-bottom: none; }
+.card-table td { padding: 8px 16px; font-family: 'DM Mono', monospace; font-size: 11px; }
+.card-table td:first-child { color: var(--ink-light); }
+.card-table td:last-child { text-align: right; color: var(--ink); font-weight: 500; }
 
-  .scrollable { max-height: 240px; overflow-y: auto; }
-  .scrollable::-webkit-scrollbar { width: 3px; }
-  .scrollable::-webkit-scrollbar-thumb { background: var(--border); }
+/* SHIMMER */
+@keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+.shimmer {
+  display: block; height: 11px; border-radius: 3px; margin-bottom: 8px;
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+.sh-full { width: 100%; }
+.sh-med { width: 75%; }
+.sh-short { width: 50%; }
 
-  footer {
-    text-align: center;
-    padding: 20px;
-    font-family: 'DM Mono', monospace;
-    font-size: 13px;
-    color: var(--muted);
-    letter-spacing: 1px;
-    border-top: 1px solid var(--border);
-    margin-top: 8px;
-  }
+/* SIDEBAR */
+.sidebar-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+.sc-head {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.sc-sub { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--ink-light); font-weight: 400; }
+.sc-body { padding: 12px 14px; }
+
+/* SNAPSHOT TABS */
+.snap-tabs { display: flex; gap: 3px; margin-bottom: 14px; }
+.snap-tab {
+  flex: 1; padding: 4px 6px;
+  border: 1px solid var(--border-dark);
+  background: white;
+  color: var(--ink-light);
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: all 0.15s;
+  text-align: center;
+}
+.snap-tab.active { background: var(--accent); border-color: var(--accent); color: white; }
+
+/* SNAPSHOT METRICS */
+.snap-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.snap-item {}
+.snap-lbl {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: var(--ink-light);
+  letter-spacing: 0.5px;
+  margin-bottom: 3px;
+}
+.snap-val {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1;
+}
+.snap-val.sm { font-size: 14px; }
+.snap-val.loading { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--border-dark); font-weight: 400; }
+.snap-note { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--ink-light); margin-top: 2px; }
+
+/* CHECKLIST */
+.check-item {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 7px 0; border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+.check-item:last-child { border-bottom: none; }
+.check-icon { font-size: 11px; flex-shrink: 0; margin-top: 1px; }
+.ok-icon { color: var(--green); }
+.pending-icon { color: var(--border-dark); }
+.check-lbl { color: var(--ink-mid); flex: 1; }
+.check-tag {
+  font-family: 'DM Mono', monospace;
+  font-size: 8px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  border: 1px solid;
+  flex-shrink: 0;
+  letter-spacing: 0.3px;
+}
+.tag-ok { border-color: var(--green); color: var(--green); background: var(--green-light); }
+.tag-pending { border-color: var(--border-dark); color: var(--ink-light); }
+
+/* ABOUT */
+.about-p { font-size: 12px; color: var(--ink-mid); line-height: 1.65; margin-bottom: 10px; }
+.about-p:last-child { margin-bottom: 0; }
+.info-box {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 4px;
+  padding: 10px 12px;
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: #1d4ed8;
+  line-height: 1.8;
+  margin-top: 10px;
+}
+
+/* ERROR */
+.err-box {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 4px;
+  padding: 10px 14px;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--red);
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+/* FOOTER */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 16px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  color: var(--ink-light);
+}
+.footer-link { color: var(--accent); text-decoration: none; }
+.footer-link:hover { text-decoration: underline; }
 </style>
 </head>
 <body>
 
 <header>
-  <div class="logo">
-    <div class="logo-dot"></div>
-    CENTRIFUGE TOKENIZED ASSETS MONITOR
+  <div class="logo-wrap" style="display:flex;align-items:center;gap:16px;">
+    <img src="https://cdn.prod.website-files.com/6706324b4c48131ee537ff96/6711202839e5be32a778743c_centrifuge-black-logo.svg" alt="Centrifuge" style="height:22px;filter:invert(1);opacity:0.9;">
+    <div style="width:1px;height:20px;background:rgba(255,255,255,0.2);"></div>
+    <div class="logo">Fund Ops <span>Intelligence</span></div>
   </div>
   <div class="header-right">
-    <span class="live-badge">● LIVE</span>
-    <span class="ts" id="clock"></span>
+    <div class="api-status">
+      <div class="status-dot idle" id="apiDot"></div>
+      <span id="apiStatus">Connecting...</span>
+    </div>
+    <div class="header-date" id="headerDate"></div>
   </div>
 </header>
 
-<div class="main">
-
-  <!-- Fund selector -->
-  <div class="fund-tabs">
-    <button class="fund-tab active" onclick="selectFund('JAAA', this)">JAAA — Janus Henderson AAA CLO</button>
-    <button class="fund-tab" onclick="selectFund('JTRSY', this)">JTRSY — Janus Henderson Treasury</button>
-    <button class="fund-tab" onclick="selectFund('SP500', this)">SP500 — Janus Henderson S&P 500</button>
-  </div>
-
-  <!-- Investor gate notice (hidden by default) -->
-  <div id="gateNotice" style="display:none;background:rgba(91,141,238,0.08);border:1px solid rgba(91,141,238,0.3);padding:12px 18px;margin-bottom:16px;font-family:'DM Mono',monospace;font-size:11px;color:var(--accent3)">
-    ℹ NAV, shares, price, and chain issuance pulled live from api.centrifuge.io. TVL shown as 'Investors only' on the Centrifuge app — the underlying data is queried from on-chain.
-  </div>
-
-  <!-- KPIs -->
-  <div class="kpi-row">
-    <div class="kpi" style="--accent-color: var(--accent)">
-      <div class="kpi-label">Total NAV</div>
-      <div class="kpi-value" id="kpi-nav">$412.8M</div>
-      <div class="kpi-sub up" id="kpi-nav-sub">▲ +$2.1M today</div>
+<!-- TICKER -->
+<div class="ticker-bar">
+  <div class="ticker-inner">
+    <div class="t-item">
+      <span class="t-label">JAAA NAV/Share</span>
+      <span class="t-val loading" id="tk-jaaa-price">—</span>
     </div>
-    <div class="kpi" style="--accent-color: var(--accent3)">
-      <div class="kpi-label">Shares Outstanding</div>
-      <div class="kpi-value" id="kpi-shares">4,128,042</div>
-      <div class="kpi-sub neutral" id="kpi-shares-sub">ERC-4626 Vault</div>
+    <div class="t-sep"></div>
+    <div class="t-item">
+      <span class="t-label">JAAA TVL</span>
+      <span class="t-val loading" id="tk-jaaa-nav">—</span>
     </div>
-    <div class="kpi" style="--accent-color: var(--accent2)">
-      <div class="kpi-label">Current NAV/Share</div>
-      <div class="kpi-value" id="kpi-nav-share">$99.97</div>
-      <div class="kpi-sub neutral" id="kpi-nav-share-sub">live oracle price</div>
+    <div class="t-sep"></div>
+    <div class="t-item">
+      <span class="t-label">JTRSY NAV/Share</span>
+      <span class="t-val loading" id="tk-jtrsy-price">—</span>
     </div>
-    <div class="kpi" style="--accent-color: var(--accent)">
-      <div class="kpi-label">Pending Settlements</div>
-      <div class="kpi-value" id="kpi-pending">...</div>
-      <div class="kpi-sub neutral" id="kpi-pending-sub">loading</div>
+    <div class="t-sep"></div>
+    <div class="t-item">
+      <span class="t-label">JTRSY TVL</span>
+      <span class="t-val loading" id="tk-jtrsy-nav">—</span>
     </div>
-    <div class="kpi" style="--accent-color: var(--danger)">
-      <div class="kpi-label">Recon Alerts</div>
-      <div class="kpi-value" id="kpi-alerts">...</div>
-      <div class="kpi-sub neutral" id="kpi-alerts-sub">loading</div>
+    <div class="t-sep"></div>
+    <div class="t-item">
+      <span class="t-label">SP500 NAV/Share</span>
+      <span class="t-val loading" id="tk-sp500-price">—</span>
+    </div>
+    <div class="t-sep"></div>
+    <div class="t-item">
+      <span class="t-label">Source</span>
+      <span class="t-val" style="color:#4b5563;font-size:9px">api.centrifuge.io</span>
     </div>
   </div>
-
-  <!-- NAV Chart + Flow Table -->
-  <div class="grid3">
-    <div class="panel">
-      <div class="panel-title">
-        <span id="chart-title">NAV Performance</span>
-        <span class="panel-badge">ONCHAIN ORACLE</span>
-      </div>
-      <div class="nav-chart">
-        <canvas id="navChart"></canvas>
-      </div>
-    </div>
-
-    <div class="panel">
-      <div class="panel-title">Liquidity Utilization <span style="font-size:9px;color:var(--accent2);border:1px solid rgba(247,169,75,0.3);padding:1px 6px;margin-left:6px">ILLUSTRATIVE</span></div>
-      <div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:14px;line-height:1.6">Centrifuge API does not publish utilization ratios directly. Values below are illustrative of the metrics a fund ops associate would monitor — derived from holdingEscrows, redemption queues, and pool config in production.</div>
-      <div class="gauge-row" style="flex-direction:column; gap:14px;">
-        <div class="gauge-item">
-          <div class="gauge-label">USDC Reserve Buffer</div>
-          <div class="gauge-bar"><div class="gauge-fill" style="width:72%;background:var(--accent)"></div></div>
-          <div class="gauge-val up">72% <span style="color:var(--muted);font-size:10px">/ 80% target</span></div>
-        </div>
-        <div class="gauge-item">
-          <div class="gauge-label">Redemption Queue Capacity</div>
-          <div class="gauge-bar"><div class="gauge-fill" style="width:31%;background:var(--accent3)"></div></div>
-          <div class="gauge-val" style="color:var(--accent3)">31%</div>
-        </div>
-        <div class="gauge-item">
-          <div class="gauge-label">Subscription Gate</div>
-          <div class="gauge-bar"><div class="gauge-fill" style="width:58%;background:var(--accent2)"></div></div>
-          <div class="gauge-val neutral">58%</div>
-        </div>
-        <div class="gauge-item">
-          <div class="gauge-label">Counterparty Exposure</div>
-          <div class="gauge-bar"><div class="gauge-fill" style="width:89%;background:var(--danger)"></div></div>
-          <div class="gauge-val down">89% ⚠</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Settlement Flows + Recon + Alerts -->
-  <div class="grid2">
-    <div class="panel">
-      <div class="panel-title">
-        Capital Flow Log — Today
-        <span class="panel-badge">ERC-7540</span>
-      </div>
-      <div class="scrollable">
-        <table class="flow-table">
-          <thead>
-            <tr>
-              <th>TIME</th>
-              <th>TYPE</th>
-              <th>AMOUNT</th>
-              <th>STATUS</th>
-              <th>TX HASH</th>
-            </tr>
-          </thead>
-          <tbody id="flowTbody"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="panel">
-      <div class="panel-title">Onchain / Offchain Reconciliation</div>
-      <div id="reconItems"></div>
-    </div>
-  </div>
-
-  <!-- Chain Issuance + Alerts -->
-  <div class="grid2">
-    <div class="panel">
-      <div class="panel-title">Token Issuance by Chain</div>
-      <div id="issuanceItems"></div>
-    </div>
-
-    <div class="panel">
-      <div class="panel-title">Alert Feed</div>
-      <div id="alertItems"></div>
-    </div>
-  </div>
-
 </div>
 
-<footer>Justin Thom &nbsp;·&nbsp; 10 Years TradFi Fund Operations &nbsp;·&nbsp; 8 Years Hands-On Crypto Experience &nbsp;·&nbsp; LIVE DATA: api.centrifuge.io &nbsp;·&nbsp; <a href="index.html" style="color:var(--accent);text-decoration:none">← Back to Portfolio</a></footer>
+<div class="page">
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+  <!-- PAGE HEADER -->
+  <div class="page-header">
+    <div class="page-title">AI Daily Ops Briefing</div>
+    <div class="page-sub">AI-generated morning report from live Centrifuge onchain data: NAV summary, liquidity status, and recommended operator actions.</div>
+    <div class="controls">
+      <span class="ctrl-label">Pools:</span>
+      <div class="pills">
+        <button class="pill active" id="pill-JAAA" onclick="toggleFund('JAAA',this)">JAAA</button>
+        <button class="pill active" id="pill-JTRSY" onclick="toggleFund('JTRSY',this)">JTRSY</button>
+        <button class="pill" id="pill-SP500" onclick="toggleFund('SP500',this)">SP500</button>
+      </div>
+      <div class="ctrl-sep"></div>
+      <button class="gen-btn" id="simBtn" onclick="runSimulation()">
+        Run Simulated Report
+      </button>
+    </div>
+  </div>
+
+  <!-- GRID -->
+  <div class="grid">
+
+    <!-- LEFT COLUMN -->
+    <div>
+
+      <div class="section-head">
+        AI Briefing
+        <span id="briefingTs">—</span>
+      </div>
+
+      <div id="simNote" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:12px 16px;margin-bottom:14px;font-family:'DM Mono',monospace;font-size:10px;color:#1d4ed8;line-height:1.7;">
+        ◎ Sample AI agent report
+      </div>
+      <div class="alert-panel" id="alertPanel">
+        <div class="alert-panel-head">
+          <span class="alert-panel-title">Operational Alerts</span>
+          <span class="alert-panel-ts" id="alertTs"></span>
+        </div>
+        <ul class="alert-list">
+          <li class="alert-item">
+            <span class="alert-icon alert-ok">✔</span>
+            <span class="alert-text">NAV reconciliation passed — tokenPrice within tolerance of administrator NAV strike</span>
+            <span class="alert-badge badge-ok">PASS</span>
+          </li>
+          <li class="alert-item">
+            <span class="alert-icon alert-ok">✔</span>
+            <span class="alert-text">No abnormal redemption flows detected in ERC-7540 requestRedeem queue</span>
+            <span class="alert-badge badge-ok">CLEAR</span>
+          </li>
+          <li class="alert-item">
+            <span class="alert-icon alert-warn">⚠</span>
+            <span class="alert-text">Custodian T+1 confirmation pending — awaiting settlement confirmation from prime custodian</span>
+            <span class="alert-badge badge-warn">PENDING</span>
+          </li>
+          <li class="alert-item">
+            <span class="alert-icon alert-ok">✔</span>
+            <span class="alert-text">MTD inflow data reconciled — totalIssuance aligned with transfer agent share registry</span>
+            <span class="alert-badge badge-ok">PASS</span>
+          </li>
+          <li class="alert-item">
+            <span class="alert-icon alert-ok">✔</span>
+            <span class="alert-text">Onchain oracle data fresh — last tokenPrice update within expected cadence</span>
+            <span class="alert-badge badge-ok">LIVE</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="briefing-box active" id="briefingBox" style="display:none">
+
+        <div class="briefing-header-row">
+          <div class="briefing-title-badge">Morning Report</div>
+          <div class="briefing-date-badge" id="briefingDate"></div>
+        </div>
+
+        <div class="report-grid">
+
+          <div class="report-section">
+            <div class="report-section-label">NAV Summary</div>
+            <p class="report-text">Both pools are trading above par. JAAA's tokenPrice oracle reflects cumulative yield accrual consistent with a AAA-rated CLO strategy. JTRSY shows NAV per share marginally above issuance price, in line with its short-duration treasury exposure. No divergence detected between onchain tokenPrice and the expected administrator NAV strike.</p>
+          </div>
+
+          <div class="report-section">
+            <div class="report-section-label">Issuance</div>
+            <p class="report-text">Shares outstanding across both pools indicate continued institutional inflows since inception. The ERC-4626 vault architecture reflects each new deposit immediately in totalIssuance, giving the ops team real-time subscription visibility — ahead of the T+1 transfer agent confirmation required in a traditional fund structure.</p>
+          </div>
+
+          <div class="report-section">
+            <div class="report-section-label">Action Items</div>
+            <ul class="report-list">
+              <li>Run NAV oracle reconciliation against administrator report: confirm tokenPrice aligns with fund accountant NAV strike within agreed tolerance</li>
+              <li>Review ERC-7540 requestRedeem queue for unfulfilled redemptions: match against available liquidity before T+1 custodian window closes</li>
+              <li>Reconcile MTD deposit flows against prime custodian bank statement confirmations</li>
+              <li>Confirm transfer agent share registry alignment with onchain totalIssuance</li>
+            </ul>
+          </div>
+
+          <div class="report-section">
+            <div class="report-section-label">Ops Notes</div>
+            <p class="report-text">Centrifuge's ERC-7540 introduces a two-phase request-and-fulfill settlement cycle that mirrors T+1/T+2 conventions in traditional fund administration. The requestRedeem queue carries the same operational urgency as a pending redemption gate. Unfulfilled requests accrue risk and must be cleared each morning before the NAV strike window opens.</p>
+          </div>
+
+        </div>
+
+        <div class="briefing-footer">
+          <div class="briefing-footer-dot"></div>
+          Simulation · representative sample of AI report output · JAAA · JTRSY · api.centrifuge.io
+        </div>
+      </div>
+
+      <div class="section-head" style="margin-top:8px;">
+        Live Pool Data
+        <span id="refreshTs">—</span>
+      </div>
+
+      <div class="data-card" id="card-JAAA">
+        <div class="card-head">
+          <span class="card-title">JAAA · Janus Henderson AAA CLO</span>
+          <span class="card-badge">● LIVE</span>
+        </div>
+        <table class="card-table"><tbody id="tb-JAAA">
+          <tr><td colspan="2"><span class="shimmer sh-full"></span><span class="shimmer sh-med"></span><span class="shimmer sh-short"></span></td></tr>
+        </tbody></table>
+      </div>
+
+      <div class="data-card" id="card-JTRSY">
+        <div class="card-head">
+          <span class="card-title">JTRSY · Janus Henderson Treasury</span>
+          <span class="card-badge">● LIVE</span>
+        </div>
+        <table class="card-table"><tbody id="tb-JTRSY">
+          <tr><td colspan="2"><span class="shimmer sh-full"></span><span class="shimmer sh-med"></span><span class="shimmer sh-short"></span></td></tr>
+        </tbody></table>
+      </div>
+
+      <div class="data-card" id="card-SP500" style="display:none">
+        <div class="card-head">
+          <span class="card-title">SP500 · Janus Henderson S&amp;P 500</span>
+          <span class="card-badge">● LIVE</span>
+        </div>
+        <table class="card-table"><tbody id="tb-SP500">
+          <tr><td colspan="2"><span class="shimmer sh-full"></span><span class="shimmer sh-med"></span><span class="shimmer sh-short"></span></td></tr>
+        </tbody></table>
+      </div>
+
+    </div>
+
+    <!-- RIGHT SIDEBAR -->
+    <div>
+
+      <!-- Snapshot -->
+      <div class="sidebar-card">
+        <div class="sc-head">
+          Pool Snapshot
+          <span class="sc-sub" id="snapTime">Loading...</span>
+        </div>
+        <div class="sc-body">
+          <div class="snap-tabs">
+            <button class="snap-tab active" onclick="showSnap('JAAA',this)">JAAA</button>
+            <button class="snap-tab" onclick="showSnap('JTRSY',this)">JTRSY</button>
+            <button class="snap-tab" onclick="showSnap('SP500',this)">SP500</button>
+          </div>
+          <div class="snap-grid">
+            <div class="snap-item">
+              <div class="snap-lbl">Total NAV</div>
+              <div class="snap-val loading" id="snap-nav">—</div>
+              <div class="snap-note">USD</div>
+            </div>
+            <div class="snap-item">
+              <div class="snap-lbl">NAV / Share</div>
+              <div class="snap-val loading" id="snap-price">—</div>
+              <div class="snap-note">tokenPrice</div>
+            </div>
+            <div class="snap-item">
+              <div class="snap-lbl">Shares Out</div>
+              <div class="snap-val sm loading" id="snap-shares">—</div>
+              <div class="snap-note">totalIssuance</div>
+            </div>
+            <div class="snap-item">
+              <div class="snap-lbl">Implied APY</div>
+              <div class="snap-val sm loading" id="snap-apy">—</div>
+              <div class="snap-note">price appreciation</div>
+            </div>
+          </div>
+          <div id="snap-err" class="err-box" style="display:none;margin-top:10px;margin-bottom:0"></div>
+        </div>
+      </div>
+
+      <!-- Checklist -->
+      <div class="sidebar-card">
+        <div class="sc-head">Morning Checklist</div>
+        <div class="sc-body">
+          <div class="check-item">
+            <span class="check-icon pending-icon">○</span>
+            <span class="check-lbl">NAV oracle reconciliation</span>
+            <span class="check-tag tag-pending">PENDING</span>
+          </div>
+          <div class="check-item">
+            <span class="check-icon pending-icon">○</span>
+            <span class="check-lbl">Redemption queue review</span>
+            <span class="check-tag tag-pending">PENDING</span>
+          </div>
+          <div class="check-item">
+            <span class="check-icon pending-icon">○</span>
+            <span class="check-lbl">MTD flow reconciliation</span>
+            <span class="check-tag tag-pending">PENDING</span>
+          </div>
+          <div class="check-item">
+            <span class="check-icon pending-icon">○</span>
+            <span class="check-lbl">Custodian confirmation</span>
+            <span class="check-tag tag-pending">PENDING</span>
+          </div>
+          <div class="check-item">
+            <span class="check-icon pending-icon">○</span>
+            <span class="check-lbl">ERC-7540 settlement queue</span>
+            <span class="check-tag tag-pending">PENDING</span>
+          </div>
+          <div class="check-item">
+            <span class="check-icon ok-icon">✓</span>
+            <span class="check-lbl">Onchain API connected</span>
+            <span class="check-tag tag-ok">DONE</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- About -->
+      <div class="sidebar-card">
+        <div class="sc-head">About</div>
+        <div class="sc-body">
+          <p class="about-p">An AI agent that reads live Centrifuge onchain data and generates a structured morning operations report.</p>
+          <div class="info-box">
+            Data: api.centrifuge.io<br>
+            Pools: JAAA · JTRSY · SP500
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<footer>
+  <span><strong>Justin Thom</strong> &nbsp;·&nbsp; Investment Operations Associate &nbsp;·&nbsp; Centrifuge Application</span>
+  <span><a href="index.html" class="footer-link">← Portfolio</a></span>
+</footer>
+
 <script>
-// ─── CENTRIFUGE API CONFIG ───────────────────────────────────────────────────
 const CENTRIFUGE_API = 'https://api.centrifuge.io';
-
-// Real pool IDs from app.centrifuge.io
-const POOL_IDS = {
-  JAAA:  '281474976710663',
-  JTRSY: '281474976710662',
-  SP500: '281474976710665',
+const POOL_IDS = { JAAA:'281474976710663', JTRSY:'281474976710662', SP500:'281474976710665' };
+const FUND_FULL = {
+  JAAA: 'JAAA (Janus Henderson AAA CLO)',
+  JTRSY: 'JTRSY (Janus Henderson Treasury)',
+  SP500: 'SP500 (Janus Henderson S&P 500)',
 };
 
-// Cache live data per fund key
-const liveData = { JAAA: null, JTRSY: null, SP500: null };
+let poolData = { JAAA:null, JTRSY:null, SP500:null };
+let activePools = new Set(['JAAA','JTRSY']);
+let currentSnap = 'JAAA';
+let apiReady = false;
 
-// ─── GRAPHQL QUERY ───────────────────────────────────────────────────────────
-async function fetchPoolData(poolId) {
-  // Step 1: fetch pool + token metadata + recent transactions
-  const query1 = `{
-    pools(where: { id: "${poolId}" }, limit: 1) {
-      items {
-        id
-        name
-        tokens {
-          items {
-            id
-            name
-            symbol
-            totalIssuance
-            tokenPrice
-          }
-        }
-      }
-    }
-    investorTransactions(
-      where: { poolId: "${poolId}" }
-      orderBy: "createdAt"
-      orderDirection: "desc"
-      limit: 8
-    ) {
-      items {
-        txHash
-        type
-        currencyAmount
-        tokenAmount
-        tokenPrice
-        createdAt
-        blockchain { name }
-      }
-    }
-  }`;
+// HELPERS
+function ins(str, p) {
+  if (!str||str==='0') return 0;
+  const s = str.padStart(p+1,'0');
+  return parseFloat(s.slice(0,s.length-p)+'.'+s.slice(s.length-p));
+}
+function fmt(n,d=2) {
+  if (n==null||isNaN(n)) return '—';
+  return n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+}
+function fmtM(n) {
+  if (!n||isNaN(n)) return '—';
+  if (n>=1e9) return '$'+(n/1e9).toFixed(2)+'B';
+  if (n>=1e6) return '$'+(n/1e6).toFixed(2)+'M';
+  return '$'+fmt(n);
+}
+function setEl(id,val) { const e=document.getElementById(id); if(e) e.textContent=val; }
 
-  const res1 = await fetch(CENTRIFUGE_API, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query: query1 })
-  });
-  if (!res1.ok) throw new Error('API error ' + res1.status);
-  const json1 = await res1.json();
-  if (json1.errors) throw new Error(json1.errors[0].message);
+// API
+async function fetchPool(poolId) {
+  const q = `{pools(where:{id:"${poolId}"},limit:1){items{name tokens{items{id symbol totalIssuance tokenPrice}}}}}`;
+  const res = await fetch(CENTRIFUGE_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q})});
+  const json = await res.json();
+  if (json.errors) throw new Error(json.errors[0].message);
+  const pool = json.data.pools?.items?.[0];
+  const token = pool?.tokens?.items?.[0];
+  if (!token) throw new Error('No token data');
+  const iStr = token.totalIssuance||'0';
+  const navPerShare = ins(token.tokenPrice,18);
+  const totalShares = ins(iStr,iStr.length>18?18:9);
+  const totalNav = navPerShare*totalShares;
+  const daysSince = Math.max(1,Math.round((Date.now()-new Date('2025-01-01'))/86400000));
+  const impliedApy = navPerShare>1 ? ((navPerShare-1.0)*365/daysSince*100).toFixed(2) : null;
+  return { poolName:pool?.name||poolId, symbol:token.symbol, navPerShare, totalShares, totalNav, impliedApy };
+}
 
-  // Step 2: get tokenId and fetch historical snapshots by tokenId
-  const tokenId = json1.data?.pools?.items?.[0]?.tokens?.items?.[0]?.id;
-  let snapItems = [];
-
-  if (tokenId) {
-    const query2 = `{
-      tokenInstanceSnapshots(
-        where: { tokenId: "${tokenId}" }
-        orderBy: "timestamp"
-        orderDirection: "desc"
-        limit: 30
-      ) {
-        items {
-          timestamp
-          totalIssuance
-          tokenPrice
-        }
-      }
-    }`;
-    const res2 = await fetch(CENTRIFUGE_API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: query2 })
-    });
-    if (res2.ok) {
-      const json2 = await res2.json();
-      snapItems = json2.data?.tokenInstanceSnapshots?.items || [];
-    }
+async function loadAll() {
+  setDot('loading'); setEl('apiStatus','Fetching data...');
+  const results = await Promise.allSettled([
+    fetchPool(POOL_IDS.JAAA), fetchPool(POOL_IDS.JTRSY), fetchPool(POOL_IDS.SP500)
+  ]);
+  const keys = ['JAAA','JTRSY','SP500'];
+  let ok = false;
+  results.forEach((r,i) => { if (r.status==='fulfilled') { poolData[keys[i]]=r.value; ok=true; } });
+  if (ok) {
+    apiReady = true;
+    setDot('live'); setEl('apiStatus','Live · api.centrifuge.io');
+    updateTicker(); updateTables(); updateSnap(currentSnap);  } else {
+    setDot('error'); setEl('apiStatus','API Error');
   }
-
-  // Step 3: fetch per-chain token instance issuance
-  let chainItems = [];
-  if (tokenId) {
-    const query3 = `{
-      tokenInstances(
-        where: { tokenId: "${tokenId}" }
-        limit: 20
-      ) {
-        items {
-          totalIssuance
-          blockchain { name }
-        }
-      }
-    }`;
-    const res3 = await fetch(CENTRIFUGE_API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: query3 })
-    });
-    if (res3.ok) {
-      const json3 = await res3.json();
-      chainItems = json3.data?.tokenInstances?.items || [];
-    }
-  }
-
-  return { ...json1.data, tokenInstanceSnapshots: { items: snapItems }, chainIssuance: chainItems };
-}
-
-// ─── DATA PARSING ─────────────────────────────────────────────────────────────
-function parsePoolData(raw) {
-  const pool   = raw.pools?.items?.[0];
-  const token  = pool?.tokens?.items?.[0];
-  const snaps  = raw.tokenInstanceSnapshots?.items || [];
-  const txs    = raw.investorTransactions?.items || [];
-  const chains = raw.chainIssuance || [];
-
-  // Centrifuge v3: tokenPrice has 18 decimal places, totalIssuance has 9
-  // Use string manipulation to avoid float precision loss on 18-digit integers
-  function insertDecimals(str, places) {
-    if (!str || str === '0') return 0;
-    const s = str.padStart(places + 1, '0');
-    const intPart = s.slice(0, s.length - places) || '0';
-    const decPart = s.slice(s.length - places);
-    return parseFloat(intPart + '.' + decPart);
-  }
-
-  // Auto-detect issuance decimals: SP500 uses 1e18, JAAA uses 1e9
-  const issuanceStr = token?.totalIssuance || '0';
-  const issuanceDecimals = issuanceStr.length > 18 ? 18 : 9;
-  const navPerShare = insertDecimals(token?.tokenPrice, 18);
-  const totalShares = insertDecimals(issuanceStr, issuanceDecimals);
-  const totalNav    = navPerShare * totalShares;
-
-  // Build chart data from snapshots (deduplicated by day, most recent last)
-  const seen = new Set();
-  const chartPoints = [];
-  [...snaps].reverse().forEach(s => {
-    const d = new Date(parseInt(s.timestamp));
-    const day = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-    if (!seen.has(day)) {
-      seen.add(day);
-      const price = insertDecimals(s.tokenPrice, 18);
-      chartPoints.push({ date: day, price });
-    }
-  });
-
-  return {
-    name:       pool?.name || '—',
-    symbol:     token?.symbol || '—',
-    navPerShare,
-    totalShares,
-    totalNav,
-    chartPoints,
-    rawTxs: txs,
-    chains,
-  };
-}
-
-function formatNav(n) {
-  if (n >= 1e9) return '$' + (n/1e9).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) + 'B';
-  if (n >= 1e6) return '$' + (n/1e6).toLocaleString('en-US', {minimumFractionDigits:1, maximumFractionDigits:1}) + 'M';
-  return '$' + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
-}
-function formatShares(n) {
-  return n >= 1e6
-    ? (n/1e6).toFixed(3) + 'M'
-    : n.toLocaleString('en-US', {maximumFractionDigits: 0});
-}
-function formatTxType(t) {
-  const map = {
-    DEPOSIT_REQUEST_UPDATED: 'DEPOSIT REQ',
-    DEPOSIT_COLLECTED: 'DEPOSIT',
-    REDEEM_REQUEST_UPDATED: 'REDEEM REQ',
-    REDEEM_COLLECTED: 'REDEMPTION',
-    TRANSFER_IN: 'TRANSFER IN',
-    TRANSFER_OUT: 'TRANSFER OUT',
-  };
-  return map[t] || t;
-}
-function shortHash(h) {
-  return h ? h.slice(0,6) + '...' + h.slice(-4) : '—';
-}
-function formatCurrency(raw, decimals = 6) {
-  if (!raw) return '—';
-  const n = Number(BigInt(raw)) / Math.pow(10, decimals);
-  return '$' + n.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-}
-
-// ─── UI UPDATER ───────────────────────────────────────────────────────────────
-function setKPI(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
-
-function renderFund(key, data) {
-  // Clear flow table first to prevent stale data from previous fund
-  document.getElementById('flowTbody').innerHTML = '';
-
-  setKPI('kpi-nav',       formatNav(data.totalNav));
-  setKPI('kpi-nav-sub',   '↑ live · Centrifuge API');
-  setKPI('kpi-shares',    formatShares(data.totalShares));
-  setKPI('kpi-shares-sub','ERC-4626 · ' + data.symbol);
-  setKPI('kpi-nav-share', data.navPerShare > 0 ? '$' + data.navPerShare.toFixed(4) : '—');
-  // Calculate pending settlements from real tx data
-  const pendingDeposits  = data.rawTxs.filter(t => t.type === 'DEPOSIT_REQUEST_UPDATED').length;
-  const pendingRedeems   = data.rawTxs.filter(t => t.type === 'REDEEM_REQUEST_UPDATED').length;
-  const totalPending     = pendingDeposits + pendingRedeems;
-  const pendingParts     = [];
-  if (pendingDeposits > 0) pendingParts.push(pendingDeposits + ' deposit' + (pendingDeposits > 1 ? 's' : ''));
-  if (pendingRedeems  > 0) pendingParts.push(pendingRedeems  + ' redeem'  + (pendingRedeems  > 1 ? 's' : ''));
-
-  setKPI('kpi-pending', totalPending > 0 ? String(totalPending) : '0');
-  const pendingSub = document.getElementById('kpi-pending-sub');
-  if (pendingSub) pendingSub.textContent = totalPending > 0 ? pendingParts.join(' · ') : 'no pending requests';
-  // Calculate onchain-derived recon alerts
-  const now = Date.now();
-  const alerts = [];
-
-  // Alert 1: any REDEEM_REQUEST_UPDATED with no matching REDEEM_COLLECTED = unmatched redemption
-  const pendingRedemptionTxs = data.rawTxs.filter(t => t.type === 'REDEEM_REQUEST_UPDATED');
-  const claimedRedemptions   = data.rawTxs.filter(t => t.type === 'REDEEM_COLLECTED' || t.type === 'REDEEM_CLAIMED');
-  const unmatchedRedeems     = pendingRedemptionTxs.length - claimedRedemptions.length;
-  if (unmatchedRedeems > 0) alerts.push(unmatchedRedeems + ' unmatched redeem' + (unmatchedRedeems > 1 ? 's' : ''));
-
-  // Alert 2: any tx where currencyAmount=0 but tokenAmount>0 on a DEPOSIT = missing price
-  const missingPrice = data.rawTxs.filter(t =>
-    ['DEPOSIT_COLLECTED','DEPOSIT_CLAIMED'].includes(t.type) &&
-    (t.currencyAmount === '0' || !t.currencyAmount) &&
-    t.tokenAmount && t.tokenAmount !== '0'
-  ).length;
-  if (missingPrice > 0) alerts.push(missingPrice + ' deposit missing currency amount');
-
-  // Alert 3: any pending request older than 48h
-  const stale = data.rawTxs.filter(t =>
-    ['REDEEM_REQUEST_UPDATED','DEPOSIT_REQUEST_UPDATED'].includes(t.type) &&
-    t.createdAt && (now - parseInt(t.createdAt)) > 48 * 60 * 60 * 1000
-  ).length;
-  if (stale > 0) alerts.push(stale + ' request' + (stale > 1 ? 's' : '') + ' >48h unresolved');
-
-  setKPI('kpi-alerts', alerts.length > 0 ? String(alerts.length) : '0');
-  const alertSub = document.getElementById('kpi-alerts-sub');
-  if (alertSub) alertSub.textContent = alerts.length > 0 ? alerts[0] : 'no onchain alerts';
-  if (alertSub) alertSub.className = 'kpi-sub ' + (alerts.length > 0 ? 'down' : 'up');
-
-  // Update recon table with live values + alert count
-  const r1 = document.getElementById('recon-nav-val');
-  const r2 = document.getElementById('recon-shares-val');
-  const r3 = document.getElementById('recon-price-val');
-  const r4 = document.getElementById('recon-alerts-val');
-  const r4s = document.getElementById('recon-alerts-status');
-  if (r1) r1.textContent = formatNav(data.totalNav);
-  if (r2) r2.textContent = formatShares(data.totalShares);
-  if (r3) r3.textContent = '$' + data.navPerShare.toFixed(6);
-  if (r4) { r4.textContent = alerts.length > 0 ? alerts.length + ' flag' + (alerts.length > 1 ? 's' : '') : '0 flags'; r4.style.color = alerts.length > 0 ? 'var(--danger)' : 'var(--accent)'; }
-  if (r4s) { r4s.textContent = alerts.length > 0 ? alerts[0] : 'clean'; r4s.style.color = alerts.length > 0 ? 'var(--danger)' : 'var(--accent)'; }
-
-  // Chart
-  const prices = data.chartPoints.map(p => p.price);
-  const labels = data.chartPoints.map(p => {
-    const d = new Date(p.date);
-    return (d.getMonth()+1) + '/' + d.getDate();
-  });
-  const dayCount = labels.length;
-  const chartTitle = document.getElementById('chart-title');
-  if (chartTitle) chartTitle.textContent = dayCount + '-Day NAV Performance';
-  updateChart(prices, labels);
-  renderChainIssuance(data.chains);
-
-  // Flow table
-  const tbody = document.getElementById('flowTbody');
-  tbody.innerHTML = '';
-  if (data.rawTxs.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5" style="color:var(--muted);padding:16px 0;font-family:DM Mono,monospace;font-size:11px">No investor transactions indexed for this pool yet</td></tr>';
-  } else {
-    data.rawTxs.forEach((tx, i) => {
-      const type = formatTxType(tx.type);
-      const isIn = ['DEPOSIT_COLLECTED','TRANSFER_IN','DEPOSIT_REQUEST_UPDATED'].includes(tx.type);
-      const amtColor = isIn ? 'var(--accent)' : 'var(--danger)';
-      const prefix = isIn ? '+' : '-';
-
-      // Auto-detect decimal scale: if > 1e15 use 1e18, otherwise use 1e9
-      // Different Centrifuge pools use different precision
-      function parseAmount(raw, decimals) {
-        if (!raw || raw === '0') return 0;
-        const s = raw.padStart(decimals + 1, '0');
-        const intPart = s.slice(0, s.length - decimals) || '0';
-        const decPart = s.slice(s.length - decimals);
-        return parseFloat(intPart + '.' + decPart);
-      }
-
-      let amt = '—';
-      const cAmt = parseAmount(tx.currencyAmount, 6); // USDC = 6 decimals
-      const rawT = tx.tokenAmount || '0';
-      const decimalsT = rawT.length > 15 ? 18 : 9;   // auto-detect scale
-      const tAmt = parseAmount(rawT, decimalsT);
-
-      if (cAmt > 0) {
-        amt = prefix + '$' + cAmt.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
-      } else if (tAmt > 0) {
-        amt = prefix + tAmt.toLocaleString('en-US', {minimumFractionDigits:4, maximumFractionDigits:4}) + ' shares';
-      }
-
-      // createdAt is Unix ms timestamp
-      const time = tx.createdAt
-        ? new Date(parseInt(tx.createdAt)).toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'})
-        : '—';
-      const date = tx.createdAt
-        ? new Date(parseInt(tx.createdAt)).toLocaleDateString('en-US', {month:'2-digit', day:'2-digit'})
-        : '';
-
-      const cls = isIn ? 's-settled' : 's-pending';
-      const chain = tx.blockchain?.name || 'ethereum';
-      const hash = tx.txHash ? tx.txHash.slice(0,6) + '...' + tx.txHash.slice(-4) : '—';
-
-      tbody.innerHTML += `<tr style="animation:fadeUp 0.4s ease ${0.05*i}s both">
-        <td style="color:var(--muted)">${date} ${time}</td>
-        <td>${type}</td>
-        <td style="color:${amtColor}">${amt}</td>
-        <td><span class="status-dot ${cls}"></span>${chain}</td>
-        <td class="hash"><a href="https://etherscan.io/tx/${tx.txHash}" target="_blank" style="color:var(--accent3);text-decoration:none">${hash}</a></td>
-      </tr>`;
-    });
-  }
-}
-
-// ─── CHAIN ISSUANCE ───────────────────────────────────────────────────────────
-function renderChainIssuance(chains) {
-  const colors = ['var(--accent3)','var(--accent)','var(--accent2)','#6fba8a','#a78bfa','#f7a94b'];
-  const el = document.getElementById('issuanceItems');
-
-  if (!chains || chains.length === 0) {
-    el.innerHTML = '<div style="font-size:10px;color:var(--muted);font-family:DM Mono,monospace">No per-chain issuance data available for this pool</div>';
-    return;
-  }
-
-  // Calculate total issuance across all chains
-  const totals = chains.map(c => ({
-    name: c.blockchain?.name || 'unknown',
-    raw:  parseFloat(c.totalIssuance || '0')
-  })).filter(c => c.raw > 0);
-
-  const grandTotal = totals.reduce((sum, c) => sum + c.raw, 0);
-  if (grandTotal === 0) {
-    el.innerHTML = '<div style="font-size:10px;color:var(--muted);font-family:DM Mono,monospace">Issuance data unavailable</div>';
-    return;
-  }
-
-  el.innerHTML = '<div style="font-size:10px;color:var(--muted);margin-bottom:10px;font-family:DM Mono,monospace">Live issuance split · api.centrifuge.io · tokenInstances</div>';
-  totals.sort((a,b) => b.raw - a.raw).forEach((c, i) => {
-    const pct = (c.raw / grandTotal * 100).toFixed(1);
-    const color = colors[i % colors.length];
-    const name = c.name.charAt(0).toUpperCase() + c.name.slice(1);
-    el.innerHTML += `<div class="issuance-row">
-      <div class="issuance-chain">${name}</div>
-      <div class="issuance-bar-wrap"><div class="issuance-bar" style="width:${pct}%;background:${color}"></div></div>
-      <div class="issuance-amount" style="color:${color}">${pct}%</div>
-    </div>`;
-  });
-}
-function setLoading(key) {
-  setKPI('kpi-nav', '...');
-  setKPI('kpi-shares', '...');
-  setKPI('kpi-nav-share', '...');
-  setKPI('kpi-nav-sub', 'Fetching from api.centrifuge.io');
-  setKPI('kpi-shares-sub', '');
-  document.getElementById('flowTbody').innerHTML =
-    '<tr><td colspan="5" style="color:var(--muted);padding:16px 0">⟳ Loading live data from Centrifuge API...</td></tr>';
-}
-
-function setError(msg) {
-  setKPI('kpi-nav', 'API ERR');
-  setKPI('kpi-nav-sub', msg);
-  document.getElementById('flowTbody').innerHTML =
-    `<tr><td colspan="5" style="color:var(--danger);padding:16px 0">⚠ ${msg}</td></tr>`;
-}
-
-// ─── MAIN LOAD ────────────────────────────────────────────────────────────────
-let currentFund = 'JAAA';
-let navChartInstance = null;
-
-async function selectFund(key, btn) {
-  currentFund = key;
-  document.querySelectorAll('.fund-tab').forEach(t => t.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  // Show warning for investor-gated funds
-  document.getElementById('gateNotice').style.display = key !== 'JAAA' ? 'block' : 'none';
-  setLoading(key);
-
-  try {
-    if (!liveData[key]) {
-      const raw = await fetchPoolData(POOL_IDS[key]);
-      liveData[key] = parsePoolData(raw);
-    }
-    renderFund(key, liveData[key]);
-  } catch (e) {
-    console.error(e);
-    setError('Could not reach api.centrifuge.io — ' + e.message);
-  }
-}
-
-// ─── CHART ───────────────────────────────────────────────────────────────────
-function updateChart(data, labels) {
-  if (navChartInstance) { navChartInstance.destroy(); }
-  if (!data || !data.length) { data = []; labels = []; }
-  const ctx = document.getElementById('navChart').getContext('2d');
-  const grad = ctx.createLinearGradient(0,0,0,140);
-  grad.addColorStop(0,'rgba(0,232,198,0.25)');
-  grad.addColorStop(1,'rgba(0,232,198,0)');
-  navChartInstance = new Chart(ctx, {
-    type:'line',
-    data:{
-      labels: labels || [],
-      datasets:[{
-        data,
-        borderColor:'#00e8c6',
-        borderWidth:2,
-        backgroundColor:grad,
-        fill:true,
-        tension:0.4,
-        pointRadius:0,
-        pointHoverRadius:4,
-        pointHoverBackgroundColor:'#00e8c6'
-      }]
-    },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{
-        backgroundColor:'rgba(13,19,24,0.95)',
-        borderColor:'#1a2530',
-        borderWidth:1,
-        titleFont:{family:'DM Mono',size:10},
-        bodyFont:{family:'DM Mono',size:12},
-        titleColor:'#4a6070',
-        bodyColor:'#00e8c6',
-        padding:10,
-        callbacks:{label:c=>'NAV/Share: $'+Number(c.raw).toFixed(4)}
-      }},
-      scales:{
-        x:{grid:{color:'rgba(26,37,48,0.5)',lineWidth:1},ticks:{font:{family:'DM Mono',size:9},color:'#4a6070',maxTicksLimit:6}},
-        y:{grid:{color:'rgba(26,37,48,0.5)',lineWidth:1},ticks:{font:{family:'DM Mono',size:9},color:'#4a6070',callback:v=>'$'+Number(v).toFixed(4)},position:'right'}
-      }
-    }
-  });
-}
-
-// ─── STATIC PANELS (recon + chain issuance + alerts stay contextual) ─────────
-function renderStaticPanels() {
-  // Recon panel — onchain values populated after live fetch, offchain = "admin report" placeholder
-  // (In production these would come from a second data source)
-  document.getElementById('reconItems').innerHTML = `
-    <table style="width:100%;border-collapse:collapse;font-family:'DM Mono',monospace;font-size:11px">
-      <thead>
-        <tr>
-          <th style="text-align:left;color:var(--muted);font-size:9px;letter-spacing:2px;padding:0 0 10px 0;border-bottom:1px solid var(--border)">LINE ITEM</th>
-          <th style="text-align:right;color:var(--accent);font-size:9px;letter-spacing:2px;padding:0 0 10px 12px;border-bottom:1px solid var(--border)">ONCHAIN <span style="font-size:8px;background:rgba(0,232,198,0.1);border:1px solid rgba(0,232,198,0.3);padding:1px 5px">LIVE</span></th>
-          <th style="text-align:right;color:var(--accent2);font-size:9px;letter-spacing:2px;padding:0 0 10px 12px;border-bottom:1px solid var(--border)">OFFCHAIN <span style="font-size:8px;background:rgba(247,169,75,0.1);border:1px solid rgba(247,169,75,0.3);padding:1px 5px">PENDING</span></th>
-          <th style="text-align:right;color:var(--muted);font-size:9px;letter-spacing:2px;padding:0 0 10px 12px;border-bottom:1px solid var(--border)">STATUS</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td style="padding:10px 0;border-bottom:1px solid rgba(26,37,48,0.6);color:var(--text)">Total NAV</td>
-          <td style="text-align:right;padding:10px 12px;border-bottom:1px solid rgba(26,37,48,0.6);color:var(--accent)" id="recon-nav-val">loading...</td>
-          <td style="text-align:right;padding:10px 12px;border-bottom:1px solid rgba(26,37,48,0.6);color:var(--muted)">Admin report</td>
-          <td style="text-align:right;padding:10px 12px;border-bottom:1px solid rgba(26,37,48,0.6);color:var(--muted)">—</td>
-        </tr>
-        <tr>
-          <td style="padding:10px 0;border-bottom:1px solid rgba(26,37,48,0.6);color:var(--text)">Shares Issued</td>
-          <td style="text-align:right;padding:10px 12px;border-bottom:1px solid rgba(26,37,48,0.6);color:var(--accent)" id="recon-shares-val">loading...</td>
-          <td style="text-align:right;padding:10px 12px;border-bottom:1px solid rgba(26,37,48,0.6);color:var(--muted)">Transfer agent</td>
-          <td style="text-align:right;padding:10px 12px;border-bottom:1px solid rgba(26,37,48,0.6);color:var(--muted)">—</td>
-        </tr>
-        <tr>
-          <td style="padding:10px 0;border-bottom:1px solid rgba(26,37,48,0.6);color:var(--text)">NAV per Share</td>
-          <td style="text-align:right;padding:10px 12px;border-bottom:1px solid rgba(26,37,48,0.6);color:var(--accent)" id="recon-price-val">loading...</td>
-          <td style="text-align:right;padding:10px 12px;border-bottom:1px solid rgba(26,37,48,0.6);color:var(--muted)">Fund accountant</td>
-          <td style="text-align:right;padding:10px 12px;border-bottom:1px solid rgba(26,37,48,0.6);color:var(--muted)">—</td>
-        </tr>
-        <tr>
-          <td style="padding:10px 0;color:var(--text)">Onchain Alerts</td>
-          <td style="text-align:right;padding:10px 12px;color:var(--accent)" id="recon-alerts-val">loading...</td>
-          <td style="text-align:right;padding:10px 12px;color:var(--muted)">Unmatched redeems<br>missing prices · >48h</td>
-          <td style="text-align:right;padding:10px 12px;color:var(--muted)" id="recon-alerts-status">—</td>
-        </tr>
-      </tbody>
-    </table>`;
-
-  // Chain issuance — populated with live data after fetch
-  document.getElementById('issuanceItems').innerHTML =
-    '<div style="font-size:10px;color:var(--muted);margin-bottom:10px;font-family:DM Mono,monospace">⟳ Loading chain issuance data...</div>';
-
-  // Alerts — static contextual, analyst note by J. Thom
-  const alerts = [
-    {icon:'🟢',msg:'Live data feed active. NAV, shares, and price pulled directly from api.centrifuge.io GraphQL endpoint (pool 281474976710663).', time:'NOW — LIVE'},
-    {icon:'🟡',msg:'Offchain admin reports (Janus Henderson administrator, Prime Trust custodian) are not publicly accessible via API. In production this panel diffs those reports line-by-line against onchain state at T+0.',time:'DEMO NOTE'},
-  ];
-  const alertEl = document.getElementById('alertItems');
-  alertEl.innerHTML = '';
-  alerts.forEach((a,i) => {
-    alertEl.innerHTML += `<div class="alert-item" style="animation-delay:${0.1*i}s">
-      <div class="alert-icon">${a.icon}</div>
-      <div class="alert-body">
-        <div class="alert-msg">${a.msg}</div>
-        <div class="alert-time">${a.time}</div>
-      </div>
-    </div>`;
-  });
-}
-
-// ─── CLOCK ────────────────────────────────────────────────────────────────────
-function updateClock() {
   const now = new Date();
-  document.getElementById('clock').textContent = now.toUTCString().replace(' GMT','') + ' UTC';
+  setEl('refreshTs','Refreshed '+now.toLocaleTimeString());
+  setEl('snapTime',now.toLocaleTimeString());
 }
-updateClock(); setInterval(updateClock, 1000);
 
-// ─── BOOT ─────────────────────────────────────────────────────────────────────
-renderStaticPanels();
-// Start chart empty while loading
-updateChart([], []);
-// Load JAAA on start
-selectFund('JAAA', document.querySelector('.fund-tab.active'));
+function setDot(state) {
+  const d = document.getElementById('apiDot');
+  d.className = 'status-dot';
+  if (state==='loading') d.classList.add('loading');
+  else if (state==='error') { d.style.background='#f87171'; d.style.animation='none'; }
+  // live = default green
+}
 
+// TICKER
+function updateTicker() {
+  const J=poolData.JAAA, T=poolData.JTRSY, S=poolData.SP500;
+  const ids = ['tk-jaaa-price','tk-jaaa-nav','tk-jtrsy-price','tk-jtrsy-nav','tk-sp500-price'];
+  if(J){ setEl('tk-jaaa-price','$'+J.navPerShare.toFixed(4)); setEl('tk-jaaa-nav',fmtM(J.totalNav)); }
+  if(T){ setEl('tk-jtrsy-price','$'+T.navPerShare.toFixed(4)); setEl('tk-jtrsy-nav',fmtM(T.totalNav)); }
+  if(S){ setEl('tk-sp500-price','$'+S.navPerShare.toFixed(4)); }
+  ids.forEach(id=>{ const e=document.getElementById(id); if(e) e.className='t-val'; });
+}
+
+// TABLES
+function renderTable(key) {
+  const d = poolData[key];
+  const tb = document.getElementById('tb-'+key);
+  if (!d) { tb.innerHTML='<tr><td colspan="2" style="padding:10px 16px;color:#9ca3af;font-size:10px">Data unavailable</td></tr>'; return; }
+  const rows = [
+    ['Total NAV (USD)', fmtM(d.totalNav)],
+    ['NAV per Share', '$'+d.navPerShare.toFixed(6)],
+    ['Shares Outstanding', fmt(d.totalShares,0)],
+    ['Implied APY', d.impliedApy ? d.impliedApy+'%' : '—'],
+    ['Token Symbol', d.symbol||'—'],
+    ['Pool Name', d.poolName||'—'],
+  ];
+  tb.innerHTML = rows.map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join('');
+}
+function updateTables() { ['JAAA','JTRSY','SP500'].forEach(renderTable); }
+
+// SNAPSHOT
+function updateSnap(key) {
+  const d = poolData[key];
+  const err = document.getElementById('snap-err');
+  if (!d) { err.style.display='block'; err.textContent='No data for '+key; return; }
+  err.style.display='none';
+  document.getElementById('snap-nav').className='snap-val'; setEl('snap-nav',fmtM(d.totalNav));
+  document.getElementById('snap-price').className='snap-val'; setEl('snap-price','$'+d.navPerShare.toFixed(4));
+  const sh = document.getElementById('snap-shares');
+  sh.className='snap-val sm'; sh.textContent = d.totalShares>=1e6?(d.totalShares/1e6).toFixed(2)+'M':fmt(d.totalShares,0);
+  const ap = document.getElementById('snap-apy');
+  ap.className='snap-val sm'; ap.textContent = d.impliedApy ? d.impliedApy+'%' : '—';
+}
+function showSnap(key, btn) {
+  currentSnap=key;
+  document.querySelectorAll('.snap-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  updateSnap(key);
+}
+
+// PILL TOGGLE
+function toggleFund(key, btn) {
+  if (activePools.has(key)) {
+    if (activePools.size<=1) return;
+    activePools.delete(key);
+    btn.classList.remove('active');
+    const c = document.getElementById('card-'+key);
+    if (c) c.style.display='none';
+  } else {
+    activePools.add(key);
+    btn.classList.add('active');
+    const c = document.getElementById('card-'+key);
+    if (c) c.style.display='block';
+  }
+}
+
+
+// SIMULATION
+function runSimulation() {
+  document.getElementById('simBtn').disabled = true;
+  document.getElementById('simBtn').textContent = 'Generating...';
+  document.getElementById('simNote').style.display = 'block';
+  document.getElementById('alertPanel').style.display = 'block';
+  document.getElementById('alertTs').textContent = new Date().toLocaleTimeString();
+  setTimeout(() => {
+    document.getElementById('briefingBox').style.display = 'block';
+    document.getElementById('simBtn').textContent = 'Run Simulated Report';
+    document.getElementById('simBtn').disabled = false;
+    setEl('briefingTs', new Date().toLocaleTimeString());
+  }, 900);
+}
+
+// INIT
+function init() {
+  const now = new Date();
+  document.getElementById('headerDate').textContent = now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+  const bdEl = document.getElementById('briefingDate'); if(bdEl) bdEl.textContent = now.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+}
+
+init();
+loadAll();
 </script>
 </body>
 </html>
