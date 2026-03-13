@@ -237,7 +237,7 @@
 </div>
 
 <footer>
-  Justin Thom &nbsp;|&nbsp; 10 Years TradFi Fund Operations &nbsp;|&nbsp; 8 Years Hands-On Crypto Experience &nbsp;|&nbsp;
+  Justin Thom &nbsp;|&nbsp; 10 Years TradFi Fund Operations &nbsp;|&nbsp; 9 Years Active in Crypto Markets &nbsp;|&nbsp;
   Live onchain data: api.centrifuge.io &nbsp;|&nbsp;
   <a href="index.html" style="color:var(--green);text-decoration:none">← Portfolio</a>
 </footer>
@@ -288,7 +288,7 @@ async function fetchOnchain(poolId) {
 
   const issuanceStr = token?.totalIssuance || '0';
   const navPerShare = insertDecimals(token?.tokenPrice, 18);
-  const totalShares = insertDecimals(issuanceStr, issuanceStr.length > 18 ? 18 : 9);
+  const totalShares = insertDecimals(issuanceStr, issuanceStr.length > 18 ? 18 : 6);
   const totalNav    = navPerShare * totalShares;
 
   const now = new Date();

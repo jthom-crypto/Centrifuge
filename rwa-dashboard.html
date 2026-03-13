@@ -412,7 +412,7 @@
 
 </div>
 
-<footer>Justin Thom &nbsp;·&nbsp; 10 Years TradFi Fund Operations &nbsp;·&nbsp; 8 Years Active in Crypto Markets &nbsp;·&nbsp; LIVE DATA: api.centrifuge.io &nbsp;·&nbsp; <a href="index.html" style="color:var(--accent);text-decoration:none">← Back to Portfolio</a></footer>
+<footer>Justin Thom &nbsp;·&nbsp; 10 Years TradFi Fund Operations &nbsp;·&nbsp; 9 Years Active in Crypto Markets &nbsp;·&nbsp; LIVE DATA: api.centrifuge.io &nbsp;·&nbsp; <a href="index.html" style="color:var(--accent);text-decoration:none">← Back to Portfolio</a></footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script>
@@ -551,9 +551,11 @@ function parsePoolData(raw) {
     return parseFloat(intPart + '.' + decPart);
   }
 
-  // Auto-detect issuance decimals: SP500 uses 1e18, JAAA uses 1e9
+  // Auto-detect issuance decimals: SP500 uses 1e18, JAAA/JTRSY use 1e9
+  // A 1e18-encoded value with any meaningful amount will be 27+ chars
+  // A 1e9-encoded value (e.g. 400M shares) will be ~18 chars
   const issuanceStr = token?.totalIssuance || '0';
-  const issuanceDecimals = issuanceStr.length > 18 ? 18 : 9;
+  const issuanceDecimals = issuanceStr.length > 18 ? 18 : 6;
   const navPerShare = insertDecimals(token?.tokenPrice, 18);
   const totalShares = insertDecimals(issuanceStr, issuanceDecimals);
   const totalNav    = navPerShare * totalShares;
@@ -584,9 +586,8 @@ function parsePoolData(raw) {
 }
 
 function formatNav(n) {
-  if (n >= 1e9) return '$' + (n/1e9).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) + 'B';
-  if (n >= 1e6) return '$' + (n/1e6).toLocaleString('en-US', {minimumFractionDigits:1, maximumFractionDigits:1}) + 'M';
-  return '$' + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+  if (!n || isNaN(n)) return '—';
+  return '$' + Math.round(n).toLocaleString('en-US');
 }
 function formatShares(n) {
   return n >= 1e6
@@ -713,7 +714,10 @@ function renderFund(key, data) {
       }
 
       let amt = '—';
-      const cAmt = parseAmount(tx.currencyAmount, 6); // USDC = 6 decimals
+      // Centrifuge currencyAmount: auto-detect decimals same way as tokenAmount
+      const rawC = tx.currencyAmount || '0';
+      const decimalsC = rawC.length > 15 ? 18 : 6;
+      const cAmt = parseAmount(rawC, decimalsC); // auto-detect 18 or 6 decimals
       const rawT = tx.tokenAmount || '0';
       const decimalsT = rawT.length > 15 ? 18 : 9;   // auto-detect scale
       const tAmt = parseAmount(rawT, decimalsT);
