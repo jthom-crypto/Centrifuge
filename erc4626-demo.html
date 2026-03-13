@@ -377,7 +377,7 @@ async function fetchVault(poolId) {
   const token=pool?.tokens?.items?.[0];
   const issuanceStr=token?.totalIssuance||'0';
   const navPerShare=insertDecimals(token?.tokenPrice,18);
-  const totalShares=insertDecimals(issuanceStr,issuanceStr.length>18?18:9);
+  const totalShares=insertDecimals(issuanceStr,issuanceStr.length>18?18:6);
   const totalNav=navPerShare*totalShares;
   return { navPerShare, totalShares, totalNav, symbol:token?.symbol||currentFund, poolName:pool?.name||currentFund };
 }
