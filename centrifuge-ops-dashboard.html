@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Centrifuge Ops Dashboard</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0d0f14; color: #e2e8f0; min-height: 100vh; }
+.header { background: #12151c; border-bottom: 1px solid #1e2433; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
+.header-left { display: flex; align-items: center; gap: 12px; }
+.logo { width: 32px; height: 32px; background: linear-gradient(135deg, #f5a623, #e8831a); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; color: #000; }
+.header h1 { font-size: 16px; font-weight: 700; color: #f1f5f9; }
+.header .subtitle { font-size: 11px; color: #64748b; }
+.header-right { display: flex; align-items: center; gap: 12px; }
+.last-updated { font-size: 11px; color: #475569; display: flex; align-items: center; gap: 6px; }
+.live-dot { width: 7px; height: 7px; background: #22c55e; border-radius: 50%; animation: pulse 2s infinite; }
+.live-dot.loading { background: #f59e0b; }
+.live-dot.error { background: #ef4444; animation: none; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.refresh-btn { background: #1e2433; border: 1px solid #2d3748; color: #94a3b8; font-size: 11px; padding: 4px 10px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all 0.15s; }
+.refresh-btn:hover { background: #2d3748; color: #cbd5e1; }
+.refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.spin { animation: spin 1s linear infinite; display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.main { padding: 20px 24px; }
+.kpi-bar { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px; }
+.kpi { background: #12151c; border: 1px solid #1e2433; border-radius: 10px; padding: 16px 18px; }
+.kpi-label { font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+.kpi-value { font-size: 24px; font-weight: 700; color: #f1f5f9; line-height: 1; }
+.kpi-sub { font-size: 11px; color: #475569; margin-top: 5px; }
+.green { color: #22c55e !important; } .yellow { color: #f59e0b !important; } .red { color: #ef4444 !important; } .dim { color: #475569; }
+.row2 { display: grid; grid-template-columns: 1.8fr 1fr; gap: 16px; margin-bottom: 16px; }
+.row3 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.panel { background: #12151c; border: 1px solid #1e2433; border-radius: 10px; overflow: hidden; margin-bottom: 16px; }
+.ph { padding: 13px 16px; border-bottom: 1px solid #1e2433; display: flex; align-items: center; justify-content: space-between; }
+.ph-title { font-size: 13px; font-weight: 600; color: #cbd5e1; }
+.ph-badge { background: #1e2433; color: #94a3b8; font-size: 10px; padding: 2px 8px; border-radius: 20px; }
+.scroll { max-height: 600px; overflow-y: auto; }
+.scroll::-webkit-scrollbar { width: 3px; } .scroll::-webkit-scrollbar-thumb { background: #2d3748; border-radius: 2px; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th { padding: 9px 14px; text-align: left; font-size: 10px; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; background: #0d0f14; border-bottom: 1px solid #1e2433; white-space: nowrap; }
+td { padding: 9px 14px; border-bottom: 1px solid #0f1219; color: #cbd5e1; vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #141820; }
+.badge { display: inline-flex; align-items: center; padding: 2px 7px; border-radius: 20px; font-size: 10px; font-weight: 600; white-space: nowrap; }
+.b-green { background: #052e16; color: #22c55e; border: 1px solid #14532d; }
+.b-yellow { background: #2d1a00; color: #f59e0b; border: 1px solid #92400e; }
+.b-red { background: #2d0a0a; color: #ef4444; border: 1px solid #7f1d1d; }
+.b-gray { background: #1e2433; color: #64748b; border: 1px solid #2d3748; }
+.b-blue { background: #0c1a2e; color: #60a5fa; border: 1px solid #1e3a5f; }
+.chip { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 500; margin: 1px; }
+.c-arb{background:#0c1a2e;color:#60a5fa} .c-eth{background:#1a1030;color:#a78bfa} .c-avax{background:#2d0a0a;color:#f87171}
+.c-base{background:#0c1e2e;color:#38bdf8} .c-bnb{background:#1f1a00;color:#fbbf24} .c-plume{background:#1a0a2e;color:#c084fc}
+.c-monad{background:#0a1a2e;color:#67e8f9} .c-hyper{background:#0a1a1a;color:#34d399} .c-opt{background:#2d100a;color:#fb923c}
+.sdot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; margin-right: 4px; vertical-align: middle; }
+.s-green{background:#22c55e} .s-yellow{background:#f59e0b} .s-red{background:#ef4444} .s-gray{background:#475569}
+.mono { font-family: 'SF Mono','Fira Code',monospace; }
+.bold { font-weight: 600; color: #f1f5f9; }
+.tr { text-align: right; }
+.bar-wrap { display: flex; align-items: center; gap: 8px; }
+.bar-bg { flex:1; height: 5px; background: #1e2433; border-radius: 3px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg,#f5a623,#e8831a); }
+.mdot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.mdot-on{background:#22c55e} .mdot-off{background:#1e2433}
+.pipe-row { padding: 11px 16px; border-bottom: 1px solid #0f1219; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.pipe-row:last-child { border-bottom: none; }
+.placeholder { padding: 24px; color: #475569; text-align: center; font-size: 12px; }
+.error-banner { background: #2d0a0a; border: 1px solid #7f1d1d; color: #ef4444; padding: 12px 16px; font-size: 12px; border-radius: 8px; margin-bottom: 16px; display: none; }
+.error-banner.visible { display: block; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-left">
+    <div class="logo">C</div>
+    <div>
+      <h1>Centrifuge Ops Dashboard</h1>
+      <div class="subtitle">Investment Operations · Mainnet · Live</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <button class="refresh-btn" id="refreshBtn" onclick="loadData()">↻ Refresh</button>
+    <div class="last-updated"><div class="live-dot" id="liveDot"></div><span id="ts">Loading…</span></div>
+  </div>
+</div>
+<div class="main">
+  <div class="error-banner" id="errorBanner"></div>
+  <div class="kpi-bar" id="kpis">
+    <div class="kpi"><div class="kpi-label">Total TVL</div><div class="kpi-value dim">—</div></div>
+    <div class="kpi"><div class="kpi-label">Active Pools</div><div class="kpi-value dim">—</div></div>
+    <div class="kpi"><div class="kpi-label">Live Vaults</div><div class="kpi-value dim">—</div></div>
+    <div class="kpi"><div class="kpi-label">Price Alerts</div><div class="kpi-value dim">—</div></div>
+    <div class="kpi"><div class="kpi-label">Total Tokens</div><div class="kpi-value dim">—</div></div>
+  </div>
+  <div class="row2">
+    <div class="panel">
+      <div class="ph"><span class="ph-title">🏦 Pools &amp; Tokens</span><span class="ph-badge" id="poolBadge"></span></div>
+      <div class="scroll" id="poolTable"><div class="placeholder">Fetching live data…</div></div>
+    </div>
+    <div>
+      <div class="panel">
+        <div class="ph"><span class="ph-title">⏱ Price Staleness</span></div>
+        <div class="scroll" id="staleness"><div class="placeholder">Loading…</div></div>
+      </div>
+      <div class="panel">
+        <div class="ph"><span class="ph-title">🚧 Pipeline</span></div>
+        <div id="pipeline"><div class="placeholder">Loading…</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="row3">
+    <div class="panel">
+      <div class="ph"><span class="ph-title">🗺 Vault Coverage Matrix</span><span class="dim" style="font-size:11px">● = vault exists</span></div>
+      <div style="overflow-x:auto" id="matrix"><div class="placeholder">Loading…</div></div>
+    </div>
+    <div class="panel">
+      <div class="ph"><span class="ph-title">📊 TVL Distribution</span></div>
+      <div class="scroll" id="tvl"><div class="placeholder">Loading…</div></div>
+    </div>
+  </div>
+</div>
+<script>
+const API = 'https://api.centrifuge.io';
+
+async function gql(query) {
+  const res = await fetch(API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query })
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const json = await res.json();
+  if (json.errors) throw new Error(json.errors[0].message);
+  return json.data;
+}
+
+function price18(r){return r&&r!=='0'?Number(BigInt(r))/1e18:null}
+function issuance(r,dec){return r&&r!=='0'?Number(BigInt(r))/Math.pow(10,dec||18):null}
+function usd(n){
+  if(n==null)return'—';
+  if(n>=1e9)return'$'+(n/1e9).toFixed(2)+'B';
+  if(n>=1e6)return'$'+(n/1e6).toFixed(2)+'M';
+  if(n>=1e3)return'$'+(n/1e3).toFixed(1)+'K';
+  return'$'+n.toFixed(2);
+}
+function days(ts){return ts?(Date.now()-Number(ts))/864e5:null}
+function chip(name){
+  const m={arbitrum:'c-arb',ethereum:'c-eth',avalanche:'c-avax',base:'c-base',binance:'c-bnb',plume:'c-plume',monad:'c-monad',hyperliquid:'c-hyper',optimism:'c-opt'};
+  return `<span class="chip ${m[name]||''}">${name}</span>`;
+}
+function staleBadge(d){
+  if(d==null)return'<span class="badge b-gray">No price</span>';
+  if(d<2)return`<span class="badge b-green">✓ ${d.toFixed(1)}d</span>`;
+  if(d<7)return`<span class="badge b-yellow">⚡ ${d.toFixed(1)}d</span>`;
+  return`<span class="badge b-red">! ${Math.floor(d)}d</span>`;
+}
+function sdot(d){
+  if(d==null)return'<span class="sdot s-gray"></span>';
+  if(d<2)return'<span class="sdot s-green"></span>';
+  if(d<7)return'<span class="sdot s-yellow"></span>';
+  return'<span class="sdot s-red"></span>';
+}
+
+function render(D) {
+  const pm={};
+  for(const p of D.pools.items) pm[p.id]={...p,tokens:[],chains:new Set(),assets:new Set(),vc:0};
+  for(const t of D.tokens.items){
+    if(!pm[t.poolId]) pm[t.poolId]={id:t.poolId,name:t.pool?.name,tokens:[],chains:new Set(),assets:new Set(),vc:0};
+    pm[t.poolId].tokens.push(t);
+  }
+  for(const v of D.vaults.items){
+    if(!pm[v.poolId]) continue;
+    if(v.blockchain?.name) pm[v.poolId].chains.add(v.blockchain.name);
+    if(v.asset?.symbol) pm[v.poolId].assets.add(v.asset.symbol);
+    pm[v.poolId].vc++;
+  }
+
+  // For each token, find the most recent price update across all spoke chains via snapshots
+  // tokenInstanceSnapshots are keyed by tokenId (e.g. "0x000100...0001")
+  // tokens have an `id` field if available; fall back to tokenPriceComputedAt
+  let totalTVL=0;
+  const tData=D.tokens.items.map(t=>{
+    // Use the most recent spoke-chain snapshot timestamp if available, else hub tokenPriceComputedAt
+    const snap=D.latestSnapshot&&D.latestSnapshot[t.id];
+    const freshTs=snap?snap.timestamp:t.tokenPriceComputedAt;
+    const freshPrice=snap?snap.tokenPrice:t.tokenPrice;
+    const p=price18(freshPrice||t.tokenPrice),i=issuance(t.totalIssuance,t.decimals);
+    const tvl=p&&i?p*i:null;
+    if(tvl)totalTVL+=tvl;
+    return{...t,p,i,tvl,d:days(freshTs),freshTs};
+  }).sort((a,b)=>(b.tvl||0)-(a.tvl||0));
+
+  const stale=tData.filter(t=>t.tokenPrice).sort((a,b)=>(b.d||0)-(a.d||0));
+  const critCount=stale.filter(t=>t.d>7).length;
+  const warnCount=stale.filter(t=>t.d>=2&&t.d<=7).length;
+  const allChains=[...new Set(D.vaults.items.map(v=>v.blockchain?.name).filter(Boolean))].sort();
+  const poolsWithVaults=Object.values(pm).filter(p=>p.vc>0);
+  const pipeline=Object.values(pm).filter(p=>p.vc===0);
+
+  document.getElementById('kpis').innerHTML=`
+    <div class="kpi"><div class="kpi-label">Total TVL</div><div class="kpi-value">${usd(totalTVL)}</div><div class="kpi-sub">${tData.filter(t=>t.tvl).length} tokens with TVL</div></div>
+    <div class="kpi"><div class="kpi-label">Active Pools</div><div class="kpi-value">${Object.values(pm).filter(p=>p.tokens.length>0).length}</div><div class="kpi-sub">${pipeline.length} in pipeline</div></div>
+    <div class="kpi"><div class="kpi-label">Live Vaults</div><div class="kpi-value">${D.vaults.items.length}</div><div class="kpi-sub">across ${allChains.length} chains</div></div>
+    <div class="kpi"><div class="kpi-label">Price Alerts</div><div class="kpi-value ${critCount>0?'red':warnCount>0?'yellow':'green'}">${critCount+warnCount}</div><div class="kpi-sub ${critCount>0?'red':''}">${critCount} critical · ${warnCount} warning</div></div>
+    <div class="kpi"><div class="kpi-label">Total Tokens</div><div class="kpi-value">${D.tokens.items.length}</div><div class="kpi-sub">${tData.filter(t=>!t.tvl).length} without TVL</div></div>
+  `;
+
+  document.getElementById('poolBadge').textContent=D.tokens.items.length+' tokens';
+  const poolsSorted=Object.values(pm).sort((a,b)=>{
+    const ta=a.tokens.reduce((s,t)=>{const p=price18(t.tokenPrice),i=issuance(t.totalIssuance,t.decimals);return s+(p&&i?p*i:0)},0);
+    const tb=b.tokens.reduce((s,t)=>{const p=price18(t.tokenPrice),i=issuance(t.totalIssuance,t.decimals);return s+(p&&i?p*i:0)},0);
+    return tb-ta;
+  });
+  let pt='<table><thead><tr><th>Pool / Token</th><th>Price</th><th>TVL</th><th>Chains</th><th>Vaults</th></tr></thead><tbody>';
+  for(const pool of poolsSorted){
+    const chains=[...pool.chains].filter(Boolean).map(chip).join('');
+    const vb=pool.vc>0?`<span class="badge b-green">${pool.vc} vaults · ${pool.chains.size} chain${pool.chains.size!==1?'s':''}</span>`:'<span class="badge b-gray">0</span>';
+    const pname=pool.name||'Pool '+pool.id;
+    if(pool.tokens.length===0){
+      pt+=`<tr><td><span class="bold">${pname}</span><div class="mono dim" style="font-size:10px">${pool.id}</div></td><td class="dim">—</td><td class="dim">—</td><td>${chains||'<span class="dim">—</span>'}</td><td>${vb}</td></tr>`;
+      continue;
+    }
+    for(let i=0;i<pool.tokens.length;i++){
+      const t=pool.tokens[i];
+      const pr=price18(t.tokenPrice),is=issuance(t.totalIssuance,t.decimals);
+      const tv=pr&&is?pr*is:null;
+      pt+=`<tr>
+        <td>${i===0?`<div class="bold">${pname}</div>`:''}
+          <div style="padding-left:${i===0?0:8}px">${sdot(t.d)}<span class="mono">${t.symbol}</span> <span class="dim">${t.name.length>38?t.name.slice(0,38)+'…':t.name}</span></div>
+        </td>
+        <td class="mono">${pr?'$'+pr.toFixed(6):'—'}</td>
+        <td class="bold">${usd(tv)}</td>
+        <td>${i===0?chains:''}</td>
+        <td>${i===0?vb:''}</td>
+      </tr>`;
+    }
+  }
+  pt+='</tbody></table>';
+  document.getElementById('poolTable').innerHTML=pt;
+
+  let sh='<table><thead><tr><th>Token</th><th>Pool</th><th>Last Price Update</th><th>Status</th></tr></thead><tbody>';
+  for(const t of stale){
+    const date=t.freshTs?new Date(Number(t.freshTs)).toLocaleDateString():'—';
+    const pname=t.pool?.name||t.poolId;
+    sh+=`<tr><td><span class="mono bold">${t.symbol}</span></td><td class="dim" style="font-size:11px">${pname.length>28?pname.slice(0,28)+'…':pname}</td><td class="dim mono" style="font-size:11px">${date}</td><td>${staleBadge(t.d)}</td></tr>`;
+  }
+  sh+='</tbody></table>';
+  document.getElementById('staleness').innerHTML=sh;
+
+  let pip='';
+  for(const p of pipeline){
+    const ht=p.tokens.length>0?'b-yellow':'b-gray';
+    const hl=p.tokens.length>0?'Tokens, no vaults':'Empty pool';
+    pip+=`<div class="pipe-row">
+      <div><div class="bold" style="font-size:12px">${p.name||'Unnamed'}</div>
+      <div class="mono dim" style="font-size:10px;margin-top:2px">${p.id}</div>
+      ${p.tokens.map(t=>`<div style="font-size:11px;color:#94a3b8;margin-top:3px">↳ ${t.symbol} — ${t.name.slice(0,40)}</div>`).join('')}
+      </div><span class="badge ${ht}">${hl}</span>
+    </div>`;
+  }
+  document.getElementById('pipeline').innerHTML=pip||'<div style="padding:14px;color:#475569;font-size:12px">No pipeline items</div>';
+
+  const vSet={};
+  for(const v of D.vaults.items){
+    const k=(v.blockchain?.name||'')+'|'+v.poolId;
+    if(!vSet[k])vSet[k]=[];
+    vSet[k].push(v.asset?.symbol||'?');
+  }
+  const short=p=>{
+    let n=p.name||p.id;
+    return n.replace('Janus Henderson Anemoy ','JH ').replace(' Fund Token','').replace(' Token','').replace('DeFi ','de').replace('Anemoy Tokenized Apollo Diversified Credit Fund','Apollo Credit').replace('Anemoy Tokenized ','').replace('Tokenized ','').replace('Janus Henderson ','JH ');
+  };
+  let mx='<table><thead><tr><th>Chain</th>';
+  for(const p of poolsWithVaults) mx+=`<th style="font-size:10px;writing-mode:vertical-lr;transform:rotate(180deg);height:80px;padding:4px 8px">${short(p)}</th>`;
+  mx+='</tr></thead><tbody>';
+  for(const chain of allChains){
+    mx+=`<tr><td>${chip(chain)}</td>`;
+    for(const p of poolsWithVaults){
+      const k=chain+'|'+p.id,assets=vSet[k];
+      mx+=assets?`<td title="${assets.join(', ')}" style="text-align:center"><span class="mdot mdot-on"></span><div style="font-size:9px;color:#475569;margin-top:2px">${assets.join('/')}</div></td>`:`<td style="text-align:center"><span class="mdot mdot-off"></span></td>`;
+    }
+    mx+='</tr>';
+  }
+  mx+='</tbody></table>';
+  document.getElementById('matrix').innerHTML=mx;
+
+  const tvlTokens=tData.filter(t=>t.tvl>0);
+  let tv='<table><thead><tr><th>Token</th><th>Price</th><th>Issuance</th><th>TVL</th><th style="width:35%">Share</th></tr></thead><tbody>';
+  for(const t of tvlTokens){
+    const pct=t.tvl/totalTVL*100;
+    tv+=`<tr>
+      <td><span class="mono bold">${t.symbol}</span></td>
+      <td class="mono">${t.p?'$'+t.p.toFixed(6):'—'}</td>
+      <td class="dim mono" style="font-size:11px">${t.i?Math.round(t.i).toLocaleString():'—'}</td>
+      <td class="bold">${usd(t.tvl)}</td>
+      <td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${pct.toFixed(2)}%"></div></div><span class="dim" style="font-size:10px;width:38px;text-align:right">${pct.toFixed(1)}%</span></div></td>
+    </tr>`;
+  }
+  tv+='</tbody></table>';
+  document.getElementById('tvl').innerHTML=tv;
+
+}
+
+
+async function loadData() {
+  const btn = document.getElementById('refreshBtn');
+  const dot = document.getElementById('liveDot');
+  const banner = document.getElementById('errorBanner');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin">↻</span> Loading…';
+  dot.className = 'live-dot loading';
+  document.getElementById('ts').textContent = 'Fetching…';
+  banner.className = 'error-banner';
+
+  try {
+    const [poolsData, tokensData, vaultsData, snapshotData] = await Promise.all([
+      gql('{ pools(limit: 100) { items { id name } } }'),
+      gql('{ tokens(limit: 100) { items { id name symbol poolId decimals tokenPrice tokenPriceComputedAt totalIssuance pool { name } } } }'),
+      gql('{ vaults(limit: 200) { items { id poolId blockchain { name } asset { symbol } } } }'),
+      gql('{ tokenInstanceSnapshots(limit: 1000, orderBy: "timestamp", orderDirection: "desc") { items { tokenId timestamp tokenPrice } } }')
+    ]);
+
+    // Build map of tokenId -> most recent snapshot
+    const latestSnapshot = {};
+    for (const s of snapshotData.tokenInstanceSnapshots.items) {
+      if (!latestSnapshot[s.tokenId] || s.timestamp > latestSnapshot[s.tokenId].timestamp) {
+        latestSnapshot[s.tokenId] = s;
+      }
+    }
+
+    render({
+      pools: poolsData.pools,
+      tokens: tokensData.tokens,
+      vaults: vaultsData.vaults,
+      latestSnapshot
+    });
+
+    dot.className = 'live-dot';
+    document.getElementById('ts').textContent = new Date().toLocaleString();
+  } catch(err) {
+    console.error(err);
+    dot.className = 'live-dot error';
+    banner.className = 'error-banner visible';
+    banner.textContent = '⚠ Failed to fetch live data from api.centrifuge.io: ' + err.message;
+    document.getElementById('ts').textContent = 'Error';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '↻ Refresh';
+  }
+}
+
+loadData();
+setInterval(loadData, 5 * 60 * 1000);
+</script>
+</body>
+</html>
