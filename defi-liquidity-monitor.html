@@ -1,10 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
+<html lang="en"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DeFi Liquidity Monitor — Justin Thom</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&amp;family=DM+Mono:wght@300;400;500&amp;display=swap" rel="stylesheet">
 <style>
 :root {
   --bg:       #08090f;
@@ -194,8 +193,184 @@ footer { position:relative; z-index:1; text-align:center; padding:20px; border-t
   position: absolute; top: -2px; height: 7px; width: 2px; background: rgba(248,113,113,0.7);
 }
 </style>
-</head>
+<style id="claude-agent-animation-styles">
+      @keyframes claude-pulse {
+        0% {
+          box-shadow: 
+            inset 0 0 10px rgba(217, 119, 87, 0.5),
+            inset 0 0 20px rgba(217, 119, 87, 0.3),
+            inset 0 0 30px rgba(217, 119, 87, 0.1);
+        }
+        50% {
+          box-shadow: 
+            inset 0 0 15px rgba(217, 119, 87, 0.7),
+            inset 0 0 25px rgba(217, 119, 87, 0.5),
+            inset 0 0 35px rgba(217, 119, 87, 0.2);
+        }
+        100% {
+          box-shadow: 
+            inset 0 0 10px rgba(217, 119, 87, 0.5),
+            inset 0 0 20px rgba(217, 119, 87, 0.3),
+            inset 0 0 30px rgba(217, 119, 87, 0.1);
+        }
+      }
+    </style><style>
+  /* ── deSPXA section ── */
+  .despxa-section { margin: 24px 0 8px; padding: 0 0 8px; border-top: 1px solid rgba(255,255,255,0.08); }
+  .despxa-header { display:flex; justify-content:space-between; align-items:center; padding:12px 0 8px; font-size:11px; letter-spacing:1.5px; color:rgba(255,255,255,0.5); text-transform:uppercase; }
+  .despxa-header .new-badge { background:#f5a623; color:#000; font-size:9px; font-weight:700; padding:2px 7px; border-radius:3px; letter-spacing:1px; }
+  .despxa-card { background:#141824; border:1px solid rgba(255,255,255,0.1); border-radius:10px; padding:18px 20px; margin-bottom:12px; }
+  .despxa-card-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px; }
+  .despxa-card-title { font-size:18px; font-weight:700; color:#fff; }
+  .despxa-card-subtitle { font-size:11px; color:rgba(255,255,255,0.45); margin-top:3px; }
+  .despxa-card-tvl { text-align:right; }
+  .despxa-card-tvl .tvl-value { font-size:20px; font-weight:700; color:#00e5ff; font-family:monospace; }
+  .despxa-card-tvl .tvl-label { font-size:10px; color:rgba(255,255,255,0.4); margin-top:2px; }
+  .despxa-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px; }
+  .despxa-stat-label { font-size:9px; letter-spacing:1px; color:rgba(255,255,255,0.4); text-transform:uppercase; margin-bottom:4px; }
+  .despxa-stat-value { font-size:16px; font-weight:700; color:#fff; font-family:monospace; }
+  .despxa-stat-sub { font-size:10px; color:rgba(255,255,255,0.4); margin-top:2px; }
+  .despxa-integrations { border-top:1px solid rgba(255,255,255,0.07); padding-top:14px; }
+  .despxa-int-title { font-size:9px; letter-spacing:1px; color:rgba(255,255,255,0.4); text-transform:uppercase; margin-bottom:10px; }
+  .despxa-int-row { display:grid; grid-template-columns:140px 1fr auto auto auto; gap:12px; align-items:center; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.05); font-size:12px; }
+  .despxa-int-row:last-child { border-bottom:none; }
+  .despxa-int-name { font-weight:600; color:#fff; }
+  .despxa-int-type { color:rgba(255,255,255,0.45); font-size:11px; }
+  .despxa-int-tvl { font-family:monospace; color:#00e5ff; text-align:right; }
+  .despxa-int-apy { font-family:monospace; color:#4ade80; text-align:right; }
+  .despxa-int-status { font-size:9px; letter-spacing:1px; font-weight:700; padding:2px 8px; border-radius:3px; }
+  .status-live { background:rgba(74,222,128,0.12); color:#4ade80; }
+  .status-integrating { background:rgba(245,166,35,0.12); color:#f5a623; }
+
+  /* ── Benchmark card ── */
+  .bench-card { background:#141824; border:1px solid rgba(255,255,255,0.1); border-radius:10px; padding:18px 20px; margin-top:12px; }
+  .bench-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.07); }
+  .bench-title { font-size:15px; font-weight:700; color:#fff; }
+  .bench-subtitle { font-size:11px; color:rgba(255,255,255,0.4); margin-top:2px; }
+  .bench-context { font-size:10px; color:rgba(255,255,255,0.35); font-family:monospace; }
+  .bench-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:rgba(255,255,255,0.07); border-radius:6px; overflow:hidden; }
+  .bench-col { background:#141824; padding:14px 16px; }
+  .bench-proto { font-size:10px; font-weight:700; letter-spacing:1.5px; color:rgba(255,255,255,0.4); text-transform:uppercase; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+  .bench-proto-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+  .bench-metric-label { font-size:9px; letter-spacing:1px; text-transform:uppercase; color:rgba(255,255,255,0.35); margin-bottom:3px; }
+  .bench-metric-value { font-size:22px; font-weight:700; font-family:monospace; color:#fff; margin-bottom:2px; }
+  .bench-metric-sub { font-size:10px; color:rgba(255,255,255,0.4); margin-bottom:14px; }
+  .bench-carry { margin-top:4px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.07); }
+  .bench-carry-label { font-size:9px; letter-spacing:1px; text-transform:uppercase; color:rgba(255,255,255,0.3); margin-bottom:3px; }
+  .bench-carry-value { font-size:15px; font-weight:700; font-family:monospace; }
+  .carry-pos { color:#4ade80; }
+  .carry-neg { color:#f87171; }
+  .bench-carry-sub { font-size:10px; color:rgba(255,255,255,0.35); margin-top:2px; }
+  .bench-status-row { display:flex; align-items:center; gap:6px; margin-top:8px; }
+  .bench-status-pill { font-size:9px; font-weight:700; letter-spacing:0.8px; padding:2px 7px; border-radius:3px; }
+  .pill-future { background:rgba(255,255,255,0.08); color:rgba(255,255,255,0.4); }
+  .pill-bench { background:rgba(147,112,219,0.15); color:#a78bfa; }
+
+  /* ── Footer ── */
+  .footer-bar { border-top:1px solid rgba(255,255,255,0.07); padding:16px 24px 20px; margin-top:24px; }
+  .footer-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; font-size:11px; color:rgba(255,255,255,0.35); }
+  .footer-author { font-weight:600; color:rgba(255,255,255,0.5); }
+  .footer-refresh { font-family:monospace; font-size:10px; }
+  .footer-sources { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+  .footer-source { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:6px; padding:8px 10px; }
+  .footer-source-name { font-size:10px; font-weight:700; color:rgba(255,255,255,0.5); margin-bottom:3px; letter-spacing:0.5px; }
+  .footer-source-desc { font-size:10px; color:rgba(255,255,255,0.28); line-height:1.4; }
+  .footer-source-cadence { font-size:9px; color:rgba(0,229,255,0.4); margin-top:4px; font-family:monospace; }
+</style><style>
+  .health-section, .risk-context, .health-grid, 
+  #yield-router-section, .yield-router-section { display:none !important; }
+</style><link type="text/css" rel="stylesheet" href="chrome-extension://fheoggkfdfchfphceeifdbepaooicaho/css/mcafee_fonts.css"><style>
+  .derwa-section { margin: 0 0 8px; padding: 0; }
+  .derwa-header { display:flex; justify-content:space-between; align-items:center; 
+    padding:12px 0 10px; font-size:11px; letter-spacing:1.5px; 
+    color:rgba(255,255,255,0.5); text-transform:uppercase;
+    border-top: 1px solid rgba(255,255,255,0.08); }
+  .derwa-header-right { font-size:10px; opacity:0.4; }
+  .derwa-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+  .derwa-token { background:#141824; border:1px solid rgba(255,255,255,0.1); 
+    border-radius:10px; padding:16px 18px; }
+  .derwa-token-top { display:flex; justify-content:space-between; align-items:flex-start; 
+    margin-bottom:14px; }
+  .derwa-token-name { font-size:17px; font-weight:700; color:#fff; }
+  .derwa-token-type { font-size:10px; color:rgba(255,255,255,0.4); margin-top:3px; }
+  .derwa-token-tvl { text-align:right; }
+  .derwa-token-tvl-value { font-size:18px; font-weight:700; font-family:monospace; color:#00e5ff; }
+  .derwa-token-tvl-label { font-size:9px; color:rgba(255,255,255,0.35); margin-top:2px; }
+  .derwa-stats { display:grid; grid-template-columns:1fr 1fr; gap:10px; 
+    padding-top:12px; border-top:1px solid rgba(255,255,255,0.07); }
+  .derwa-stat-label { font-size:9px; letter-spacing:1px; text-transform:uppercase; 
+    color:rgba(255,255,255,0.35); margin-bottom:3px; }
+  .derwa-stat-value { font-size:14px; font-weight:700; font-family:monospace; color:#fff; }
+  .derwa-stat-sub { font-size:9px; color:rgba(255,255,255,0.35); margin-top:2px; }
+  .derwa-chain-row { display:flex; gap:6px; margin-top:12px; flex-wrap:wrap; }
+  .derwa-chain-pill { font-size:9px; font-weight:600; letter-spacing:0.5px;
+    padding:2px 8px; border-radius:3px; background:rgba(255,255,255,0.07); 
+    color:rgba(255,255,255,0.4); }
+  .derwa-chain-pill.active { background:rgba(0,229,255,0.1); color:#00e5ff; }
+  .derwa-status { display:inline-block; font-size:9px; font-weight:700; letter-spacing:1px;
+    padding:2px 7px; border-radius:3px; margin-top:8px; }
+  .derwa-status.live { background:rgba(74,222,128,0.12); color:#4ade80; }
+  .derwa-status.new { background:rgba(245,166,35,0.12); color:#f5a623; }
+  .derwa-total-bar { background:#141824; border:1px solid rgba(255,255,255,0.08); 
+    border-radius:8px; padding:12px 18px; margin-bottom:12px;
+    display:flex; justify-content:space-between; align-items:center; }
+  .derwa-total-label { font-size:10px; letter-spacing:1px; color:rgba(255,255,255,0.4); text-transform:uppercase; }
+  .derwa-total-value { font-size:20px; font-weight:700; font-family:monospace; color:#00e5ff; }
+  .derwa-total-breakdown { font-size:10px; color:rgba(255,255,255,0.35); margin-top:2px; text-align:right; }
+</style><style>
+.despxa-integrations {
+  margin-top: 10px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding-top: 10px;
+}
+.despxa-integrations-title {
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: #6b7a8d;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.despxa-int-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 8px;
+}
+.despxa-int-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+}
+.despxa-int-name {
+  color: #c8d0dc;
+  font-weight: 500;
+}
+.despxa-int-role {
+  font-size: 8px;
+  letter-spacing: 0.5px;
+  padding: 1px 5px;
+  border-radius: 2px;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+.int-live {
+  background: rgba(0,255,180,0.15);
+  color: #00ffb4;
+  border: 1px solid rgba(0,255,180,0.3);
+}
+.int-pending {
+  background: rgba(255,200,0,0.1);
+  color: #ffc800;
+  border: 1px solid rgba(255,200,0,0.25);
+}
+.int-strategy {
+  background: rgba(100,120,200,0.15);
+  color: #8899cc;
+  border: 1px solid rgba(100,120,200,0.25);
+}
+</style></head>
 <body>
+
 
 <header>
   <div class="logo-group">
@@ -204,22 +379,173 @@ footer { position:relative; z-index:1; text-align:center; padding:20px; border-t
     <div class="page-title">DeFi Liquidity Monitor</div>
   </div>
   <div class="header-right">
-    <span class="badge badge-live" id="liveStatus">● LOADING</span>
-    <span class="badge badge-info">JAAA · AAVE HORIZON · ETH MAINNET</span>
-    <span class="badge badge-info" id="lastUpdate">—</span>
+    <span class="badge badge-live" id="liveStatus" style="color: var(--green); border-color: rgba(52, 211, 153, 0.4);">● LIVE</span>
+    <span class="badge badge-info">ALL PRODUCTS · MULTICHAIN</span>
+    <span class="badge badge-info" id="lastUpdate">Updated 08:15:39</span>
   </div>
 </header>
 
 <div class="main">
 
-  <div class="summary-strip">
-    <div class="sum-cell"><div class="sum-dot" style="background:var(--aave)"></div><div><div class="sum-label">Aave Horizon · JAAA</div><div class="sum-value shimmer" id="sum-jaaa-nav">—</div><div class="sum-sub" id="sum-jaaa-sub">Live NAV per Share</div></div></div>
-    <div class="sum-cell"><div class="sum-dot" style="background:var(--morpho)"></div><div><div class="sum-label">Morpho</div><div class="sum-value shimmer" id="sum-morpho-apy">—</div><div class="sum-sub" id="sum-morpho-tvl">Best Vault APY</div></div></div>
-    <div class="sum-cell"><div class="sum-dot" style="background:var(--sky)"></div><div><div class="sum-label">Sky</div><div class="sum-value shimmer" id="sum-sky-apy">—</div><div class="sum-sub" id="sum-sky-tvl">Sky Savings Rate</div></div></div>
-    <div class="sum-cell"><div class="sum-dot" style="background:var(--euler)"></div><div><div class="sum-label">Euler V2</div><div class="sum-value shimmer" id="sum-euler-apy">—</div><div class="sum-sub" id="sum-euler-tvl">Best Vault APY</div></div></div>
+  <div class="summary-strip" style="display: none;">
+    <div class="sum-cell"><div class="sum-dot" style="background:var(--aave)"></div><div><div class="sum-label">Aave Horizon · JAAA</div><div class="sum-value" id="sum-jaaa-nav">$1.0293</div><div class="sum-sub" id="sum-jaaa-sub">TVL $402K</div></div></div>
+    <div class="sum-cell"><div class="sum-dot" style="background:var(--morpho)"></div><div style="display: none;"><div class="sum-label">Morpho</div><div class="sum-value" id="sum-morpho-apy">2531.55%</div><div class="sum-sub" id="sum-morpho-tvl">TVL $1.47B</div></div></div>
+    <div class="sum-cell"><div class="sum-dot" style="background:var(--sky)"></div><div style="display: none;"><div class="sum-label">Sky</div><div class="sum-value" id="sum-sky-apy">3.75%</div><div class="sum-sub" id="sum-sky-tvl">TVL $8.94B</div></div></div>
+    <div class="sum-cell"><div class="sum-dot" style="background:var(--euler)"></div><div style="display: none;"><div class="sum-label">Euler V2</div><div class="sum-value" id="sum-euler-apy">31.35%</div><div class="sum-sub" id="sum-euler-tvl">TVL $296.4M</div></div></div>
   </div>
 
-  <div class="section-label">Protocol Overview — Centrifuge RWA Integrations <span id="pool-count">Fetching live data…</span></div>
+  
+<div class="derwa-section" id="derwa-section">
+  <div class="derwa-header">
+    <span style="text-transform: none; letter-spacing: 1px; font-weight: 600;">deRWA TOKEN SUPPLY — ALL deRWA PRODUCTS</span>
+    <span class="derwa-header-right" id="derwa-updated">Updated 8:16:03 AM</span>
+  </div>
+
+  <!-- Total bar -->
+  <div class="derwa-total-bar">
+    <div>
+      <div class="derwa-total-label" style="text-transform: none;">Total deRWA TVL (All Tokens · All Chains)</div>
+      <div class="derwa-total-breakdown" id="derwa-breakdown">deJAAA $5.93M · deJTRSY $2.76M · deSPXA $2.84M</div>
+    </div>
+    <div class="derwa-token-tvl" style="text-align:right">
+      <div class="derwa-total-value" id="derwa-total">$11.53M</div>
+    </div>
+  </div>
+
+  <!-- 3-token grid -->
+  <div class="derwa-grid">
+
+    <!-- deJAAA -->
+    <div class="derwa-token">
+      <div class="derwa-token-top">
+        <div>
+          <div class="derwa-token-name">deJAAA</div>
+          <div class="derwa-token-type">AAA CLO Fund · Janus Henderson</div>
+        </div>
+        <div class="derwa-token-tvl">
+          <div class="derwa-token-tvl-value" id="jaaaTVL">$5.93M</div>
+          <div class="derwa-token-tvl-label">TVL</div>
+        </div>
+      </div>
+      <div class="derwa-stats">
+        <div>
+          <div class="derwa-stat-label">NAV / Token</div>
+          <div class="derwa-stat-value" id="jaааNAV">$1.0287</div>
+          <div class="derwa-stat-sub">Live · Centrifuge API</div>
+        </div>
+        <div>
+          <div class="derwa-stat-label">Supply</div>
+          <div class="derwa-stat-value" id="jaааSupply">5.77M</div>
+          <div class="derwa-stat-sub">Tokens outstanding</div>
+        </div>
+      </div>
+      <div class="derwa-chain-row">
+        <span class="derwa-chain-pill active" id="jaaa-eth-pill">ETH 5.20M</span>
+        <span class="derwa-chain-pill active" id="jaaa-base-pill">Base 571K</span>
+        <span class="derwa-chain-pill">Arb 0</span>
+        <span class="derwa-chain-pill">Celo 0</span>
+      </div>
+      <div><span class="derwa-status live">LIVE · AAVE HORIZON</span></div>
+    </div>
+
+    <!-- deJTRSY -->
+    <div class="derwa-token">
+      <div class="derwa-token-top">
+        <div>
+          <div class="derwa-token-name">deJTRSY</div>
+          <div class="derwa-token-type">T-Bill Fund · Janus Henderson</div>
+        </div>
+        <div class="derwa-token-tvl">
+          <div class="derwa-token-tvl-value" id="jtrsyTVL">$2.76M</div>
+          <div class="derwa-token-tvl-label">TVL</div>
+        </div>
+      </div>
+      <div class="derwa-stats">
+        <div>
+          <div class="derwa-stat-label">NAV / Token</div>
+          <div class="derwa-stat-value" id="jtrsyNAV">$1.0789</div>
+          <div class="derwa-stat-sub">T-Bill accrual est.</div>
+        </div>
+        <div>
+          <div class="derwa-stat-label">Supply</div>
+          <div class="derwa-stat-value" id="jtrsySupply">2.56M</div>
+          <div class="derwa-stat-sub">Tokens outstanding</div>
+        </div>
+      </div>
+      <div class="derwa-chain-row">
+        <span class="derwa-chain-pill active" id="jtrsy-eth-pill">ETH 2.56M</span>
+        <span class="derwa-chain-pill">Base 0</span>
+        <span class="derwa-chain-pill">Arb 0</span>
+        <span class="derwa-chain-pill">Celo 0</span>
+      </div>
+      <div><span class="derwa-status live">LIVE · AAVE HORIZON</span></div>
+    </div>
+
+    <!-- deSPXA -->
+    <div class="derwa-token">
+      <div class="derwa-token-top">
+        <div>
+          <div class="derwa-token-name">deSPXA</div>
+          <div class="derwa-token-type">S&amp;P 500 Index Fund · Janus Henderson</div>
+        </div>
+        <div class="derwa-token-tvl">
+          <div class="derwa-token-tvl-value" id="spxaTVL">$2.84M</div>
+          <div class="derwa-token-tvl-label">TVL</div>
+        </div>
+      </div>
+      <div class="derwa-stats">
+        <div>
+          <div class="derwa-stat-label">NAV / Token</div>
+          <div class="derwa-stat-value" id="spxaNAV">$676.63</div>
+          <div class="derwa-stat-sub">Live · Morpho API</div>
+        </div>
+        <div>
+          <div class="derwa-stat-label">Supply</div>
+          <div class="derwa-stat-value" id="spxaSupply">4,192</div>
+          <div class="derwa-stat-sub">Tokens outstanding</div>
+        </div>
+      </div>
+      <div class="derwa-chain-row">
+        <span class="derwa-chain-pill active" id="spxa-base-pill">Base 4,192</span>
+        <span class="derwa-chain-pill">ETH 0</span>
+      </div>
+      <div><span class="derwa-status new">NEW · AERODROME LIVE</span></div>
+    <div class="despxa-integrations">
+    <div class="despxa-integrations-title">DeFi Integrations</div>
+    <div class="despxa-int-grid">
+      <div class="despxa-int-row">
+        <span class="despxa-int-name">Aerodrome</span>
+        <span class="despxa-int-role int-live">Live</span>
+      </div>
+      <div class="despxa-int-row">
+        <span class="despxa-int-name">Morpho Blue</span>
+        <span class="despxa-int-role int-pending">Integrating</span>
+      </div>
+      <div class="despxa-int-row">
+        <span class="despxa-int-name">Euler V2</span>
+        <span class="despxa-int-role int-pending">Integrating</span>
+      </div>
+      <div class="despxa-int-row">
+        <span class="despxa-int-name">Steakhouse</span>
+        <span class="despxa-int-role int-strategy">Strategy</span>
+      </div>
+      <div class="despxa-int-row">
+        <span class="despxa-int-name">Clearstar</span>
+        <span class="despxa-int-role int-strategy">Strategy</span>
+      </div>
+      <div class="despxa-int-row">
+        <span class="despxa-int-name">Definitive</span>
+        <span class="despxa-int-role int-strategy">Strategy</span>
+      </div>
+      <div class="despxa-int-row">
+        <span class="despxa-int-name">Multipli</span>
+        <span class="despxa-int-role int-strategy">Strategy</span>
+      </div>
+    </div>
+  </div></div>
+
+  </div>
+</div><div class="section-label">Protocol Overview — Centrifuge RWA Integrations <span id="pool-count">16,672 pools indexed · 150 shown + Centrifuge live</span></div>
 
   <div class="protocols-grid">
 
@@ -235,14 +561,14 @@ footer { position:relative; z-index:1; text-align:center; padding:20px; border-t
             <span class="horizon-badge">● Centrifuge Launch Partner</span>
           </div>
         </div>
-        <div class="pc-tvl-badge"><strong id="jaaa-fund-tvl" class="shimmer">—</strong>JAAA Fund TVL</div>
+        <div class="pc-tvl-badge"><strong id="jaaa-fund-tvl" class="">$402K</strong>JAAA Fund TVL</div>
       </div>
 
       <!-- Live Centrifuge data metrics -->
       <div class="pc-metrics" style="border-bottom:1px solid var(--border)">
-        <div><div class="metric-label">NAV / Share</div><div class="metric-value shimmer" id="jaaa-nav-share">—</div><div class="metric-sub">Live · Centrifuge</div></div>
-        <div><div class="metric-label">Total Issuance</div><div class="metric-value shimmer" id="jaaa-issuance">—</div><div class="metric-sub">Onchain shares</div></div>
-        <div><div class="metric-label">Implied APY</div><div class="metric-value shimmer" id="jaaa-apy">—</div><div class="metric-sub">30-day estimate</div></div>
+        <div><div class="metric-label">NAV / Share</div><div class="metric-value" id="jaaa-nav-share">$1.0293</div><div class="metric-sub">Live · Centrifuge</div></div>
+        <div><div class="metric-label">Total Issuance</div><div class="metric-value" id="jaaa-issuance">$391K</div><div class="metric-sub">Onchain shares</div></div>
+        <div><div class="metric-label">Implied APY</div><div class="metric-value" id="jaaa-apy">~4.5%</div><div class="metric-sub">30-day estimate</div></div>
       </div>
 
       <!-- Collateral in Horizon -->
@@ -272,61 +598,181 @@ footer { position:relative; z-index:1; text-align:center; padding:20px; border-t
       </div>
 
       <!-- Context note -->
-      <div class="integration-note">
-        Aave Horizon is Centrifuge's institutional DeFi integration, enabling tokenized RWAs like JAAA and JTRSY to be used as collateral in DeFi. The proposed $100M allocation from Resolv would represent one of the largest RWA-backed looping strategies executed in DeFi.
-      </div>
+      
     </div>
+<div class="bench-card" id="bench-card">
+  <div class="bench-header">
+    <div>
+      <div class="bench-title">DeFi Rate Benchmarks</div>
+      <div class="bench-subtitle">USDC lending rates Centrifuge RWA competes against and will integrate with</div>
+    </div>
+    <div class="bench-context" id="bench-context">JAAA ~4.50% · updated 8:18:31 AM</div>
+  </div>
+  <div class="bench-grid">
+    <div class="bench-col">
+      <div class="bench-proto"><div class="bench-proto-dot" style="background:#2762ff"></div>Morpho Blue</div>
+      <div class="bench-metric-label">Major USDC Vault Avg APY</div>
+      <div class="bench-metric-value" id="bench-morpho-rate">3.22%</div>
+      <div class="bench-metric-sub">Weighted across $569M in blue-chip vaults</div>
+      <div class="bench-carry">
+        <div class="bench-carry-label">JAAA Carry if Collateral</div>
+        <div class="bench-carry-value carry-pos" id="bench-morpho-carry">+1.28%</div>
+        <div class="bench-carry-sub" id="bench-morpho-sub">4.50% JAAA − 3.22% borrow cost</div>
+      </div>
+      <div class="bench-status-row"><span class="bench-status-pill pill-future">deSPXA INTEGRATING</span></div>
+    </div>
+    <div class="bench-col">
+      <div class="bench-proto"><div class="bench-proto-dot" style="background:#6366f1"></div>Sky (MakerDAO)</div>
+      <div class="bench-metric-label">Sky Savings Rate (SSR)</div>
+      <div class="bench-metric-value" id="bench-sky-rate">3.75%</div>
+      <div class="bench-metric-sub">On-chain risk-free rate · sUSDS · $8.97B TVL</div>
+      <div class="bench-carry">
+        <div class="bench-carry-label">JAAA Spread over SSR</div>
+        <div class="bench-carry-value carry-pos" id="bench-sky-carry">+0.75%</div>
+        <div class="bench-carry-sub">Premium for choosing RWA over sUSDS</div>
+      </div>
+      <div class="bench-status-row"><span class="bench-status-pill pill-bench">BENCHMARK ONLY</span></div>
+    </div>
+    <div class="bench-col">
+      <div class="bench-proto"><div class="bench-proto-dot" style="background:#f59e0b"></div>Euler V2</div>
+      <div class="bench-metric-label">Largest USDC Vault APY</div>
+      <div class="bench-metric-value" id="bench-euler-rate">3.55%</div>
+      <div class="bench-metric-sub" id="bench-euler-sub">$41.5M vault · Ethereum mainnet</div>
+      <div class="bench-carry">
+        <div class="bench-carry-label">JAAA Carry if Collateral</div>
+        <div class="bench-carry-value carry-pos" id="bench-euler-carry">+0.95%</div>
+        <div class="bench-carry-sub" id="bench-euler-carry-sub">4.50% JAAA − 3.55% borrow cost</div>
+      </div>
+      <div class="bench-status-row"><span class="bench-status-pill pill-future">deSPXA INTEGRATING</span></div>
+    </div>
+  </div>
+</div>
 
     <!-- MORPHO -->
-    <div class="protocol-card">
+    <div class="protocol-card" style="display: none;">
       <div class="pc-header">
         <div><div class="pc-title-row"><div class="pc-dot" style="background:var(--morpho)"></div><div class="pc-name">Morpho</div></div><div class="pc-desc">Permissionless lending · Ethereum</div></div>
-        <div class="pc-tvl-badge"><strong id="morpho-tvl">—</strong>Total TVL</div>
+        <div class="pc-tvl-badge"><strong id="morpho-tvl">$1.47B</strong>Total TVL</div>
       </div>
-      <div class="util-row"><div class="util-label">Utilization</div><div class="util-bar-wrap"><div class="util-bar-fill" id="morpho-util-bar" style="width:0%;background:var(--morpho)"></div></div><div class="util-pct" id="morpho-util-pct">—</div></div>
+      <div class="util-row"><div class="util-label">Utilization</div><div class="util-bar-wrap"><div class="util-bar-fill" id="morpho-util-bar" style="width:0%;background:var(--morpho)"></div></div><div class="util-pct" id="morpho-util-pct">0%</div></div>
       <div class="pc-metrics">
-        <div><div class="metric-label">Best APY (isolated vault)</div><div class="metric-value shimmer" id="morpho-best-apy">—</div><div class="metric-sub">Single vault, concentrated risk</div></div>
-        <div><div class="metric-label">Avg APY</div><div class="metric-value shimmer" id="morpho-avg-apy">—</div><div class="metric-sub">All USDC vaults</div></div>
-        <div><div class="metric-label">Vaults</div><div class="metric-value shimmer" id="morpho-count">—</div><div class="metric-sub">Active USDC</div></div>
+        <div><div class="metric-label">Best APY (isolated vault)</div><div class="metric-value" id="morpho-best-apy">2531.55%</div><div class="metric-sub">Single vault, concentrated risk</div></div>
+        <div><div class="metric-label">Avg APY</div><div class="metric-value" id="morpho-avg-apy">55.60%</div><div class="metric-sub">All USDC vaults</div></div>
+        <div><div class="metric-label">Vaults</div><div class="metric-value" id="morpho-count">87</div><div class="metric-sub">Active USDC</div></div>
       </div>
-      <div class="pc-pools"><div class="pool-head"><span>Vault</span><span>APY</span><span>TVL</span><span>Util</span></div><div id="morpho-pools"><div class="loading-row shimmer">LOADING…</div></div></div>
+      <div class="pc-pools"><div class="pool-head"><span>Vault</span><span>APY</span><span>TVL</span><span>Util</span></div><div id="morpho-pools"><div class="pool-row">
+        <div><div class="pool-name">STEAKUSDC</div><div class="pool-chain">Ethereum</div></div>
+        <div class="pool-apy">2.10%</div>
+        <div class="pool-tvl">$193.2M</div>
+        <div class="pool-util">—</div>
+      </div><div class="pool-row">
+        <div><div class="pool-name">SYRUPUSDC</div><div class="pool-chain">Ethereum</div></div>
+        <div class="pool-apy">0.00%</div>
+        <div class="pool-tvl">$158.0M</div>
+        <div class="pool-util">—</div>
+      </div><div class="pool-row">
+        <div><div class="pool-name">GTUSDC</div><div class="pool-chain">Ethereum</div></div>
+        <div class="pool-apy">2.10%</div>
+        <div class="pool-tvl">$121.7M</div>
+        <div class="pool-util">—</div>
+      </div><div class="pool-row">
+        <div><div class="pool-name">BBQUSDCRESERVOIR</div><div class="pool-chain">Ethereum</div></div>
+        <div class="pool-apy">3.49%</div>
+        <div class="pool-tvl">$120.0M</div>
+        <div class="pool-util">—</div>
+      </div><div class="pool-row">
+        <div><div class="pool-name">SYRUPUSDC</div><div class="pool-chain">Ethereum</div></div>
+        <div class="pool-apy">0.00%</div>
+        <div class="pool-tvl">$107.3M</div>
+        <div class="pool-util">—</div>
+      </div></div></div>
     </div>
 
     <!-- SKY -->
-    <div class="protocol-card">
+    <div class="protocol-card" style="display: none;">
       <div class="pc-header">
         <div><div class="pc-title-row"><div class="pc-dot" style="background:var(--sky)"></div><div class="pc-name">Sky</div></div><div class="pc-desc">Sky Savings Rate · sUSDS · Ethereum</div></div>
-        <div class="pc-tvl-badge"><strong id="sky-tvl">—</strong>Total TVL</div>
+        <div class="pc-tvl-badge"><strong id="sky-tvl">$8.94B</strong>Total TVL</div>
       </div>
-      <div class="util-row"><div class="util-label">Utilization</div><div class="util-bar-wrap"><div class="util-bar-fill" id="sky-util-bar" style="width:0%;background:var(--sky)"></div></div><div class="util-pct" id="sky-util-pct">—</div></div>
+      <div class="util-row"><div class="util-label">Utilization</div><div class="util-bar-wrap"><div class="util-bar-fill" id="sky-util-bar" style="width: 50%; background: var(--sky);"></div></div><div class="util-pct" id="sky-util-pct">50%</div></div>
       <div class="pc-metrics">
-        <div><div class="metric-label">SSR APY</div><div class="metric-value shimmer" id="sky-ssr-apy">—</div><div class="metric-sub">sUSDS rate</div></div>
-        <div><div class="metric-label">Best APY</div><div class="metric-value shimmer" id="sky-best-apy">—</div><div class="metric-sub">Incl. rewards</div></div>
-        <div><div class="metric-label">Pools</div><div class="metric-value shimmer" id="sky-count">—</div><div class="metric-sub">Active</div></div>
+        <div><div class="metric-label">SSR APY</div><div class="metric-value" id="sky-ssr-apy">3.75%</div><div class="metric-sub">sUSDS rate</div></div>
+        <div><div class="metric-label">Best APY</div><div class="metric-value" id="sky-best-apy">3.75%</div><div class="metric-sub">Incl. rewards</div></div>
+        <div><div class="metric-label">Pools</div><div class="metric-value" id="sky-count">10</div><div class="metric-sub">Active</div></div>
       </div>
-      <div class="pc-pools"><div class="pool-head"><span>Pool</span><span>APY</span><span>TVL</span><span>Util</span></div><div id="sky-pools"><div class="loading-row shimmer">LOADING…</div></div></div>
+      <div class="pc-pools"><div class="pool-head"><span>Pool</span><span>APY</span><span>TVL</span><span>Util</span></div><div id="sky-pools"><div class="pool-row">
+        <div><div class="pool-name">SUSDS</div><div class="pool-chain">Ethereum</div></div>
+        <div class="pool-apy">3.75%</div>
+        <div class="pool-tvl">$6.47B</div>
+        <div class="pool-util">—</div>
+      </div><div class="pool-row">
+        <div><div class="pool-name">WETH</div><div class="pool-chain">Ethereum</div></div>
+        <div class="pool-apy">0.00%</div>
+        <div class="pool-tvl">$992.3M</div>
+        <div class="pool-util">—</div>
+      </div><div class="pool-row">
+        <div><div class="pool-name">WETH</div><div class="pool-chain">Ethereum</div></div>
+        <div class="pool-apy">0.00%</div>
+        <div class="pool-tvl">$543.0M</div>
+        <div class="pool-util">—</div>
+      </div><div class="pool-row">
+        <div><div class="pool-name">SUSDS</div><div class="pool-chain">Arbitrum</div></div>
+        <div class="pool-apy">3.75%</div>
+        <div class="pool-tvl">$356.6M</div>
+        <div class="pool-util">—</div>
+      </div><div class="pool-row">
+        <div><div class="pool-name">DAI</div><div class="pool-chain">Ethereum</div></div>
+        <div class="pool-apy">1.25%</div>
+        <div class="pool-tvl">$245.2M</div>
+        <div class="pool-util">—</div>
+      </div></div></div>
     </div>
 
     <!-- EULER -->
-    <div class="protocol-card">
+    <div class="protocol-card" style="display: none;">
       <div class="pc-header">
         <div><div class="pc-title-row"><div class="pc-dot" style="background:var(--euler)"></div><div class="pc-name">Euler V2</div></div><div class="pc-desc">Modular ERC-4626 vaults · Ethereum</div></div>
-        <div class="pc-tvl-badge"><strong id="euler-tvl">—</strong>Total TVL</div>
+        <div class="pc-tvl-badge"><strong id="euler-tvl">$296.4M</strong>Total TVL</div>
       </div>
-      <div class="util-row"><div class="util-label">Utilization</div><div class="util-bar-wrap"><div class="util-bar-fill" id="euler-util-bar" style="width:0%;background:var(--euler)"></div></div><div class="util-pct" id="euler-util-pct">—</div></div>
+      <div class="util-row"><div class="util-label">Utilization</div><div class="util-bar-wrap"><div class="util-bar-fill" id="euler-util-bar" style="width:0%;background:var(--euler)"></div></div><div class="util-pct" id="euler-util-pct">0%</div></div>
       <div class="pc-metrics">
-        <div><div class="metric-label">Best APY</div><div class="metric-value shimmer" id="euler-best-apy">—</div><div class="metric-sub">USDC vault</div></div>
-        <div><div class="metric-label">Avg APY</div><div class="metric-value shimmer" id="euler-avg-apy">—</div><div class="metric-sub">USDC pools</div></div>
-        <div><div class="metric-label">Vaults</div><div class="metric-value shimmer" id="euler-count">—</div><div class="metric-sub">Active USDC</div></div>
+        <div><div class="metric-label">Best APY</div><div class="metric-value" id="euler-best-apy">31.35%</div><div class="metric-sub">USDC vault</div></div>
+        <div><div class="metric-label">Avg APY</div><div class="metric-value" id="euler-avg-apy">4.64%</div><div class="metric-sub">USDC pools</div></div>
+        <div><div class="metric-label">Vaults</div><div class="metric-value" id="euler-count">16</div><div class="metric-sub">Active USDC</div></div>
       </div>
-      <div class="pc-pools"><div class="pool-head"><span>Vault</span><span>APY</span><span>TVL</span><span>Util</span></div><div id="euler-pools"><div class="loading-row shimmer">LOADING…</div></div></div>
+      <div class="pc-pools"><div class="pool-head"><span>Vault</span><span>APY</span><span>TVL</span><span>Util</span></div><div id="euler-pools"><div class="pool-row">
+        <div><div class="pool-name">USDC</div><div class="pool-chain">Ethereum</div></div>
+        <div class="pool-apy">3.55%</div>
+        <div class="pool-tvl">$41.5M</div>
+        <div class="pool-util">—</div>
+      </div><div class="pool-row">
+        <div><div class="pool-name">USDC</div><div class="pool-chain">Ethereum</div></div>
+        <div class="pool-apy">3.80%</div>
+        <div class="pool-tvl">$28.2M</div>
+        <div class="pool-util">—</div>
+      </div><div class="pool-row">
+        <div><div class="pool-name">USDC</div><div class="pool-chain">Ethereum</div></div>
+        <div class="pool-apy">3.80%</div>
+        <div class="pool-tvl">$1.0M</div>
+        <div class="pool-util">—</div>
+      </div><div class="pool-row">
+        <div><div class="pool-name">USDC</div><div class="pool-chain">Ethereum</div></div>
+        <div class="pool-apy">3.29%</div>
+        <div class="pool-tvl">$739K</div>
+        <div class="pool-util">—</div>
+      </div><div class="pool-row">
+        <div><div class="pool-name">USDC</div><div class="pool-chain">Ethereum</div></div>
+        <div class="pool-apy">0.58%</div>
+        <div class="pool-tvl">$716K</div>
+        <div class="pool-util">—</div>
+      </div></div></div>
     </div>
 
   </div>
 
   <!-- Routing Engine -->
-  <div class="section-label">Deployment Router</div>
-  <div class="routing-section">
+  <div class="section-label" style="display: none;">Deployment Router</div>
+  <div class="routing-section" style="display: none;">
     <div class="routing-header">
       <div class="routing-title">Best Yield Routing</div>
       <div class="routing-sub">Given a USDC amount, rank protocols by net APY · updates with live data</div>
@@ -334,22 +780,50 @@ footer { position:relative; z-index:1; text-align:center; padding:20px; border-t
     <div class="routing-body">
       <div>
         <div class="field-label-rt">USDC Amount</div>
-        <input class="routing-input" type="number" id="routeAmount" value="1000000" placeholder="e.g. 1000000" oninput="updateRouting()">
+        <input class="routing-input" type="number" id="routeAmount" value="1000000" placeholder="e.g. 1000000" oninput="updateRouting()" fdprocessedid="73tvb">
         <div class="field-label-rt" style="margin-top:12px">Risk Tolerance</div>
         <div class="risk-toggles">
-          <button class="risk-toggle active" onclick="setRisk('all',this)">ALL</button>
-          <button class="risk-toggle" onclick="setRisk('blue',this)">BLUE CHIP</button>
-          <button class="risk-toggle" onclick="setRisk('high',this)">HIGH YIELD</button>
+          <button class="risk-toggle active" onclick="setRisk('all',this)" fdprocessedid="rvvzb">ALL</button>
+          <button class="risk-toggle" onclick="setRisk('blue',this)" fdprocessedid="avod49">BLUE CHIP</button>
+          <button class="risk-toggle" onclick="setRisk('high',this)" fdprocessedid="w8xbes">HIGH YIELD</button>
         </div>
       </div>
       <div class="routing-arrow">→</div>
-      <div id="routingResults"><div class="loading-row shimmer">Waiting for live data…</div></div>
+      <div id="routingResults"><div class="route-item">
+      <div class="route-rank">1</div>
+      <div class="route-dot" style="background:var(--morpho)"></div>
+      <div class="route-protocol">Morpho</div>
+      <div class="route-pool">CSYUSDC</div>
+      <div class="route-apy">2531.55%</div>
+      <div class="route-yield">+$25.3M/yr</div>
+    </div><div class="route-item">
+      <div class="route-rank">2</div>
+      <div class="route-dot" style="background:var(--euler)"></div>
+      <div class="route-protocol">Euler V2</div>
+      <div class="route-pool">USDC</div>
+      <div class="route-apy">31.35%</div>
+      <div class="route-yield">+$313K/yr</div>
+    </div><div class="route-item">
+      <div class="route-rank">3</div>
+      <div class="route-dot" style="background:var(--aave)"></div>
+      <div class="route-protocol">Aave Horizon</div>
+      <div class="route-pool">JAAA (RWA Collateral)</div>
+      <div class="route-apy">4.50%</div>
+      <div class="route-yield">+$45K/yr</div>
+    </div><div class="route-item">
+      <div class="route-rank">4</div>
+      <div class="route-dot" style="background:var(--sky)"></div>
+      <div class="route-protocol">Sky</div>
+      <div class="route-pool">SUSDS</div>
+      <div class="route-apy">3.75%</div>
+      <div class="route-yield">+$38K/yr</div>
+    </div></div>
     </div>
   </div>
 
   <!-- Liquidity Health -->
-  <div class="section-label" style="margin-top:28px">Liquidity Health <span>Live protocol risk metrics · derived from DefiLlama</span></div>
-  <div class="health-grid">
+  <div class="section-label" style="margin-top: 28px; display: none;">Liquidity Health <span>Live protocol risk metrics · derived from DefiLlama</span></div>
+  <div class="health-grid" style="display: none;">
 
     <!-- Collateral Health -->
     <div class="health-card">
@@ -360,10 +834,10 @@ footer { position:relative; z-index:1; text-align:center; padding:20px; border-t
       <div class="health-metric">
         <div class="hm-row">
           <div class="hm-label">Current Ratio</div>
-          <div class="hm-value" id="health-collat-ratio" style="color:var(--green)">—</div>
+          <div class="hm-value" id="health-collat-ratio" style="color:var(--green)">178%</div>
         </div>
         <div class="hm-bar-wrap">
-          <div class="hm-bar-fill" id="health-collat-bar" style="background:var(--green);width:0%"></div>
+          <div class="hm-bar-fill" id="health-collat-bar" style="background: var(--green); width: 59.3333%;"></div>
           <div class="threshold-line" id="health-collat-threshold" style="left:50%"></div>
         </div>
         <div class="hm-sub">Simulated well-managed position · red line = liquidation threshold</div>
@@ -386,7 +860,7 @@ footer { position:relative; z-index:1; text-align:center; padding:20px; border-t
       <div class="health-metric">
         <div class="hm-row">
           <div class="hm-label">Morpho USDC Utilization</div>
-          <div class="hm-value" id="health-morpho-util" style="color:#8899ff">—</div>
+          <div class="hm-value" id="health-morpho-util" style="color:#8899ff">0%</div>
         </div>
         <div class="hm-bar-wrap">
           <div class="hm-bar-fill" id="health-morpho-util-bar" style="background:#8899ff;width:0%"></div>
@@ -396,7 +870,7 @@ footer { position:relative; z-index:1; text-align:center; padding:20px; border-t
       <div class="health-metric">
         <div class="hm-row">
           <div class="hm-label">Euler V2 Utilization</div>
-          <div class="hm-value" id="health-euler-util" style="color:var(--euler)">—</div>
+          <div class="hm-value" id="health-euler-util" style="color:var(--euler)">0%</div>
         </div>
         <div class="hm-bar-wrap">
           <div class="hm-bar-fill" id="health-euler-util-bar" style="background:var(--euler);width:0%"></div>
@@ -414,21 +888,21 @@ footer { position:relative; z-index:1; text-align:center; padding:20px; border-t
       <div class="health-metric">
         <div class="hm-row">
           <div class="hm-label">Best Isolated Vault APY</div>
-          <div class="hm-value" id="health-best-apy" style="color:var(--morpho)">—</div>
+          <div class="hm-value" id="health-best-apy" style="color:var(--morpho)">2531.55%</div>
         </div>
         <div class="hm-sub">High APY = concentrated risk in one vault</div>
       </div>
       <div class="health-metric">
         <div class="hm-row">
           <div class="hm-label">Sky SSR (Risk-Free Baseline)</div>
-          <div class="hm-value" id="health-sky-ssr" style="color:var(--sky)">—</div>
+          <div class="hm-value" id="health-sky-ssr" style="color:var(--sky)">3.75%</div>
         </div>
         <div class="hm-sub">Delta vs best vault = risk premium</div>
       </div>
       <div class="health-metric">
         <div class="hm-row">
           <div class="hm-label">Risk Premium</div>
-          <div class="hm-value" id="health-risk-premium" style="color:var(--green)">—</div>
+          <div class="hm-value" id="health-risk-premium" style="color: var(--red);">2527.80%</div>
         </div>
         <div class="hm-sub">Best vault APY minus Sky SSR</div>
       </div>
@@ -436,11 +910,11 @@ footer { position:relative; z-index:1; text-align:center; padding:20px; border-t
 
   </div>
 
-</div>
+</div><span style="display: none;">
   Justin Thom &nbsp;|&nbsp; 10 Years TradFi Fund Operations &nbsp;|&nbsp; 9 Years Active in Crypto Markets &nbsp;|&nbsp; Live data: Centrifuge API + DefiLlama Yields
-</footer>
 
-<script>
+
+</span><script>
 let allPools = [];
 let riskFilter = 'all';
 
@@ -821,5 +1295,58 @@ function updateHealthMetrics() {
 fetchAll();
 setInterval(fetchAll, 5*60*1000);
 </script>
-</body>
-</html>
+
+
+<span id="PING_IFRAME_FORM_DETECTION" style="display: none;"></span><div class="footer-bar">
+  <div class="footer-top">
+    <span class="footer-author">Justin Thom &nbsp;|&nbsp; 10 Years TradFi Fund Operations &nbsp;|&nbsp; 9 Years Active in Crypto Markets</span>
+    <span class="footer-refresh">All data refreshes every 5 minutes</span>
+  </div>
+  <div class="footer-sources">
+    <div class="footer-source">
+      <div class="footer-source-name">Centrifuge API</div>
+      <div class="footer-source-desc">JAAA NAV/share, total issuance, pool TVL, CFG token data</div>
+      <div class="footer-source-cadence">api.centrifuge.io · 5 min</div>
+    </div>
+    <div class="footer-source">
+      <div class="footer-source-name">Ethereum + Base RPC</div>
+      <div class="footer-source-desc">deJAAA &amp; deSPXA token supply via live EVM calls</div>
+      <div class="footer-source-cadence">eth.llamarpc.com · base.llamarpc.com · 5 min</div>
+    </div>
+    <div class="footer-source">
+      <div class="footer-source-name">Morpho Blue API</div>
+      <div class="footer-source-desc">deSPXA NAV price, major USDC vault APY benchmarks</div>
+      <div class="footer-source-cadence">blue-api.morpho.org · 5 min</div>
+    </div>
+    <div class="footer-source">
+      <div class="footer-source-name">DefiLlama</div>
+      <div class="footer-source-desc">Aerodrome pool TVL/APY, Euler USDC vault rates, protocol TVL</div>
+      <div class="footer-source-cadence">yields.llama.fi · api.llama.fi · 5 min</div>
+    </div>
+    <div class="footer-source">
+      <div class="footer-source-name">Dune Analytics</div>
+      <div class="footer-source-desc">deJTRSY &amp; deACRDX supply estimates (static reference)</div>
+      <div class="footer-source-cadence">dune.com/centrifuge · manual</div>
+    </div>
+    <div class="footer-source">
+      <div class="footer-source-name">CoinGecko</div>
+      <div class="footer-source-desc">CFG token price &amp; 24h change</div>
+      <div class="footer-source-cadence">api.coingecko.com · 5 min</div>
+    </div>
+    <div class="footer-source">
+      <div class="footer-source-name">Aerodrome (on-chain)</div>
+      <div class="footer-source-desc">USDC-deSPXA pool liquidity &amp; AERO reward APY</div>
+      <div class="footer-source-cadence">via DefiLlama · 5 min</div>
+    </div>
+    <div class="footer-source">
+      <div class="footer-source-name">Sky Protocol</div>
+      <div class="footer-source-desc">SSR (Sky Savings Rate) — risk-free benchmark for JAAA spread</div>
+      <div class="footer-source-cadence">via Centrifuge monitor · live</div>
+    </div>
+  </div>
+</div><span id="PING_CONTENT_DLS_POPUP" style="display: none;"></span><div style="background-color: transparent; border: none; bottom: 15px; display: block; margin: 0px; opacity: 1; padding: 0px; position: fixed; right: 15px; z-index: 2147483647;"></div><div id="claude-agent-glow-border" style="position: fixed; inset: 0px; pointer-events: none; z-index: 2147483646; opacity: 1; transition: opacity 0.3s ease-in-out; animation: 2s ease-in-out 0s infinite normal none running claude-pulse; box-shadow: rgba(217, 119, 87, 0.5) 0px 0px 10px inset, rgba(217, 119, 87, 0.3) 0px 0px 20px inset, rgba(217, 119, 87, 0.1) 0px 0px 30px inset;"></div><div id="claude-agent-stop-container" style="position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); justify-content: center; align-items: center; pointer-events: none; z-index: 2147483647;"><button id="claude-agent-stop-button" style="position: relative; transform: translateY(0px); padding: 12px 16px; background: rgb(250, 249, 245); color: rgb(20, 20, 19); border: 0.5px solid rgba(31, 30, 29, 0.4); border-radius: 12px; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto, &quot;Helvetica Neue&quot;, Arial, sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; box-shadow: rgba(217, 119, 87, 0.24) 0px 40px 80px, rgba(217, 119, 87, 0.24) 0px 4px 14px; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); opacity: 1; user-select: none; pointer-events: auto; white-space: nowrap; margin: 0px auto;">
+      <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor" style="margin-right: 12px; vertical-align: middle;">
+        <path d="M128,20A108,108,0,1,0,236,128,108.12,108.12,0,0,0,128,20Zm0,192a84,84,0,1,1,84-84A84.09,84.09,0,0,1,128,212Zm40-112v56a12,12,0,0,1-12,12H100a12,12,0,0,1-12-12V100a12,12,0,0,1,12-12h56A12,12,0,0,1,168,100Z"></path>
+      </svg>
+      <span style="vertical-align: middle;">Stop Claude</span>
+    </button></div></body></html>
