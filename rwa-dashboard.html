@@ -12,7 +12,7 @@
     --border: #1a2530;
     --accent: #00e8c6;
     --accent2: #f7a94b;
-    --accent3: #5b8dee;
+    --accent3: #5b8dee;h
     --danger: #ff4d6d;
     --text: #c8d8e8;
     --muted: #4a6070;
@@ -291,7 +291,7 @@
   <div class="fund-tabs">
     <button class="fund-tab active" onclick="selectFund('JAAA', this)">JAAA — Janus Henderson AAA CLO</button>
     <button class="fund-tab" onclick="selectFund('JTRSY', this)">JTRSY — Janus Henderson Treasury</button>
-    <button class="fund-tab" onclick="selectFund('SPXA', this)">SP500 — Janus Henderson S&P 500</button>
+    <button class="fund-tab" onclick="selectFund('SPXA', this)">SPXA — Janus Henderson S&P 500</button>
   </div>
 
   <!-- Investor gate notice (hidden by default) -->
@@ -423,11 +423,11 @@ const CENTRIFUGE_API = 'https://api.centrifuge.io';
 const POOL_IDS = {
   JAAA:  '281474976710663',
   JTRSY: '281474976710662',
-  SP500: '281474976710665',
+  SPXA: '281474976710665',
 };
 
 // Cache live data per fund key
-const liveData = { JAAA: null, JTRSY: null, SP500: null };
+const liveData = { JAAA: null, JTRSY: null, SPXA: null };
 
 // ─── GRAPHQL QUERY ───────────────────────────────────────────────────────────
 async function fetchPoolData(poolId) {
@@ -551,7 +551,7 @@ function parsePoolData(raw) {
     return parseFloat(intPart + '.' + decPart);
   }
 
-  // Auto-detect issuance decimals: SP500 uses 1e18, JAAA/JTRSY use 1e9
+  // Auto-detect issuance decimals: SPXA uses 1e18, JAAA/JTRSY use 1e9
   // A 1e18-encoded value with any meaningful amount will be 27+ chars
   // A 1e9-encoded value (e.g. 400M shares) will be ~18 chars
   const issuanceStr = token?.totalIssuance || '0';
