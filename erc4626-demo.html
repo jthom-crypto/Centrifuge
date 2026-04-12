@@ -180,7 +180,7 @@
   <div class="fund-tabs">
     <button class="fund-tab active" onclick="selectFund('JAAA',this)">JAAA — Janus Henderson AAA CLO</button>
     <button class="fund-tab" onclick="selectFund('JTRSY',this)">JTRSY — Janus Henderson Treasury</button>
-    <button class="fund-tab" onclick="selectFund('SP500',this)">SP500 — Janus Henderson SPXA</button>
+    <button class="fund-tab" onclick="selectFund('SP500',this)">SPXA — Janus Henderson S&P 500</button>
   </div>
 
   <!-- Live vault state -->
@@ -349,7 +349,7 @@ const POOL_IDS = { JAAA:'281474976710663', JTRSY:'281474976710662', SP500:'28147
 const FUND_META = {
   JAAA:  { custodian:'CLO Portfolio',      tokenName:'JAAA Tokens' },
   JTRSY: { custodian:'Treasury Portfolio', tokenName:'JTRSY Tokens' },
-  SP500: { custodian:'SPXA Index',      tokenName:'SPXA Tokens' },
+  SP500: { custodian:'S&P 500 Index',      tokenName:'SPXA Tokens' },
 };
 
 let currentFund  = 'JAAA';
